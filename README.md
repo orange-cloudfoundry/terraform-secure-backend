@@ -1,4 +1,4 @@
-# Terraform-secure-backend
+# Terraform-secure-backend [![Build Status](https://travis-ci.org/orange-cloudfoundry/terraform-secure-backend.svg?branch=master)](https://travis-ci.org/orange-cloudfoundry/terraform-secure-backend)
 
 An [http backend](https://www.terraform.io/docs/backends/types/http.html) which store and retrieve tfstates files in a secure way by encrypt/decrypt them through [credhub](https://github.com/cloudfoundry-incubator/credhub).
 
