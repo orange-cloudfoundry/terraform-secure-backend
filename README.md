@@ -15,18 +15,18 @@ You can install this via the command-line with either `curl` or `wget`.
 #### via curl
 
 ```bash
-$ sh -c "$(curl -fsSL https://raw.github.com/ArthurHlt/notifslack/master/bin/install.sh)"
+$ sh -c "$(curl -fsSL https://raw.github.com/orange-cloudfoundry/terraform-secure-backend/master/bin/install.sh)"
 ```
 
 #### via wget
 
 ```bash
-$ sh -c "$(wget https://raw.github.com/ArthurHlt/notifslack/master/bin/install.sh -O -)"
+$ sh -c "$(wget https://raw.github.com/orange-cloudfoundry/terraform-secure-backend/master/bin/install.sh -O -)"
 ```
 
 ### On windows
 
-You can install it by downloading the `.exe` corresponding to your cpu from releases page: https://github.com/ArthurHlt/notifslack/releases .
+You can install it by downloading the `.exe` corresponding to your cpu from releases page: https://github.com/orange-cloudfoundry/terraform-secure-backend/releases .
 Alternatively, if you have terminal interpreting shell you can also use command line script above, it will download file in your current working dir.
 
 ## Commands
