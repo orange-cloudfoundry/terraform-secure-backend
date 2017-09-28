@@ -1,0 +1,29 @@
+language: go
+go:
+- 1.9
+install:
+- go get github.com/onsi/ginkgo/ginkgo
+- go get github.com/onsi/gomega
+script:
+- |
+  if [ "$(go fmt ./...)"]; then
+    echo "You need to run `go fmt`"
+    exit 1
+  fi
+- go test ./... -v
+after_success:
+- bin/build-all.sh 0.10
+deploy:
+  provider: releases
+  api_key:
+    secure: iL+7Na0Wte8VsBBcdp1qBs0lmNiw8KCT9JZ2YLQiEPD3OULR2skGMc4PVN1dmPn7vFRY/v069HWy0DgG3xlYMTeFESSJmmz/qISVT4IRQKcUZnfBWHKyyRNjmYBXBVxM8yoh6Qu3ZxxVGo6ySa8bhUSHQQ5o8oC7+hX5agMmU/HL0YlTiJ9N5OqsIyC/5oV/tPW3ne3y82noZYJM9I0b4E69WpbIti5F8Regg///OxC/njH+pcOmPIhCJKDhhVAtBhn09E/8Z6Yc4BTUc6sNs7jt5Ky9hKib854CBqkrrnTIUu/2wIgLZBtdmX1nFqW1lfpPrfBGCdVO5EVnLsqt1xbH7JxUt0WKo/uUADA2r6LHDEl3zNG2/9T/ry8C1u4/NKVWS0ZXs0+kO2x+DFh/f7jarod+g3Hrb7nbsd27dbAd5hGz23L0zQebu5tFHayPb4oaQTqLCkzaVvKpGrUGpRnNYc5DWIZk4E0B5m86yGB/iDGqzs48xoU3SxVn+dIj9xEqs0DCWAy+7dSS6zBeeex4o6dHmqrUQzgQBx7K59S96Ts7y2CIYAZqz1djejh5WykOXpyFJ52HaWHt75H6r6glDFClkm/y5T6KVru6kB5ZGzO1dJM+kgNbrtr4fKrjujLWiALpBnCIBR7DfHRNliCqvbL+szIIWhQD6dqMbOw=
+  file:
+  - out/terraform-secure-backend_darwin_amd64
+  - out/terraform-secure-backend_linux_386
+  - out/terraform-secure-backend_linux_amd64
+  - out/terraform-secure-backend_windows_386.exe
+  - out/terraform-secure-backend_windows_amd64.exe
+  on:
+    tags: true
+    all_branches: true
+  skip_cleanup: true

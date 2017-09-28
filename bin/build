@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e
+
+echo -e "\nGenerating Binary for ${GOOS} on arch ${GOARCH}..."
+
+CURRENTDIR=`pwd`
+
+CGO_ENABLED=0 go build -o $CURRENTDIR/out/terraform-secure-backend
+echo -e "\nGenerating Binary finished."
