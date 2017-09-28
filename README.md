@@ -127,3 +127,9 @@ terraform {
   }
 }
 ```
+
+## Api
+
+Api implement [http backend](https://www.terraform.io/docs/backends/types/http.html) on each `https://path.to.my.secure.backend.com/states/<deployment name>`.
+
+You can list all tfstates stored by calling: `https://path.to.my.secure.backend.com/states`
