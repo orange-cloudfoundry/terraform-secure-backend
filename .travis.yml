@@ -10,7 +10,7 @@ script:
     echo "You need to run `go fmt`"
     exit 1
   fi
-- go test ./... -v
+- go test `go list ./... | grep -v vendor` -v
 after_success:
 - bin/build-all.sh
 deploy:
