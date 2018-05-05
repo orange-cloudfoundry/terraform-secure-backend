@@ -4,6 +4,7 @@ package serverfakes
 import (
 	"sync"
 
+	"github.com/cloudfoundry-incubator/credhub-cli/credhub"
 	"github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials"
 	"github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials/values"
 	"github.com/orange-cloudfoundry/terraform-secure-backend/server"
@@ -34,12 +35,12 @@ type FakeCredhubClient struct {
 	deleteReturnsOnCall map[int]struct {
 		result1 error
 	}
-	SetJSONStub        func(name string, value values.JSON, overwrite bool) (credentials.JSON, error)
+	SetJSONStub        func(name string, value values.JSON, overwrite credhub.Mode) (credentials.JSON, error)
 	setJSONMutex       sync.RWMutex
 	setJSONArgsForCall []struct {
 		name      string
 		value     values.JSON
-		overwrite bool
+		overwrite credhub.Mode
 	}
 	setJSONReturns struct {
 		result1 credentials.JSON
@@ -49,25 +50,25 @@ type FakeCredhubClient struct {
 		result1 credentials.JSON
 		result2 error
 	}
-	FindByPathStub        func(path string) ([]credentials.Base, error)
+	FindByPathStub        func(path string) (credentials.FindResults, error)
 	findByPathMutex       sync.RWMutex
 	findByPathArgsForCall []struct {
 		path string
 	}
 	findByPathReturns struct {
-		result1 []credentials.Base
+		result1 credentials.FindResults
 		result2 error
 	}
 	findByPathReturnsOnCall map[int]struct {
-		result1 []credentials.Base
+		result1 credentials.FindResults
 		result2 error
 	}
-	SetValueStub        func(name string, value values.Value, overwrite bool) (credentials.Value, error)
+	SetValueStub        func(name string, value values.Value, overwrite credhub.Mode) (credentials.Value, error)
 	setValueMutex       sync.RWMutex
 	setValueArgsForCall []struct {
 		name      string
 		value     values.Value
-		overwrite bool
+		overwrite credhub.Mode
 	}
 	setValueReturns struct {
 		result1 credentials.Value
@@ -193,13 +194,13 @@ func (fake *FakeCredhubClient) DeleteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeCredhubClient) SetJSON(name string, value values.JSON, overwrite bool) (credentials.JSON, error) {
+func (fake *FakeCredhubClient) SetJSON(name string, value values.JSON, overwrite credhub.Mode) (credentials.JSON, error) {
 	fake.setJSONMutex.Lock()
 	ret, specificReturn := fake.setJSONReturnsOnCall[len(fake.setJSONArgsForCall)]
 	fake.setJSONArgsForCall = append(fake.setJSONArgsForCall, struct {
 		name      string
 		value     values.JSON
-		overwrite bool
+		overwrite credhub.Mode
 	}{name, value, overwrite})
 	fake.recordInvocation("SetJSON", []interface{}{name, value, overwrite})
 	fake.setJSONMutex.Unlock()
@@ -218,7 +219,7 @@ func (fake *FakeCredhubClient) SetJSONCallCount() int {
 	return len(fake.setJSONArgsForCall)
 }
 
-func (fake *FakeCredhubClient) SetJSONArgsForCall(i int) (string, values.JSON, bool) {
+func (fake *FakeCredhubClient) SetJSONArgsForCall(i int) (string, values.JSON, credhub.Mode) {
 	fake.setJSONMutex.RLock()
 	defer fake.setJSONMutex.RUnlock()
 	return fake.setJSONArgsForCall[i].name, fake.setJSONArgsForCall[i].value, fake.setJSONArgsForCall[i].overwrite
@@ -246,7 +247,7 @@ func (fake *FakeCredhubClient) SetJSONReturnsOnCall(i int, result1 credentials.J
 	}{result1, result2}
 }
 
-func (fake *FakeCredhubClient) FindByPath(path string) ([]credentials.Base, error) {
+func (fake *FakeCredhubClient) FindByPath(path string) (credentials.FindResults, error) {
 	fake.findByPathMutex.Lock()
 	ret, specificReturn := fake.findByPathReturnsOnCall[len(fake.findByPathArgsForCall)]
 	fake.findByPathArgsForCall = append(fake.findByPathArgsForCall, struct {
@@ -275,35 +276,35 @@ func (fake *FakeCredhubClient) FindByPathArgsForCall(i int) string {
 	return fake.findByPathArgsForCall[i].path
 }
 
-func (fake *FakeCredhubClient) FindByPathReturns(result1 []credentials.Base, result2 error) {
+func (fake *FakeCredhubClient) FindByPathReturns(result1 credentials.FindResults, result2 error) {
 	fake.FindByPathStub = nil
 	fake.findByPathReturns = struct {
-		result1 []credentials.Base
+		result1 credentials.FindResults
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeCredhubClient) FindByPathReturnsOnCall(i int, result1 []credentials.Base, result2 error) {
+func (fake *FakeCredhubClient) FindByPathReturnsOnCall(i int, result1 credentials.FindResults, result2 error) {
 	fake.FindByPathStub = nil
 	if fake.findByPathReturnsOnCall == nil {
 		fake.findByPathReturnsOnCall = make(map[int]struct {
-			result1 []credentials.Base
+			result1 credentials.FindResults
 			result2 error
 		})
 	}
 	fake.findByPathReturnsOnCall[i] = struct {
-		result1 []credentials.Base
+		result1 credentials.FindResults
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeCredhubClient) SetValue(name string, value values.Value, overwrite bool) (credentials.Value, error) {
+func (fake *FakeCredhubClient) SetValue(name string, value values.Value, overwrite credhub.Mode) (credentials.Value, error) {
 	fake.setValueMutex.Lock()
 	ret, specificReturn := fake.setValueReturnsOnCall[len(fake.setValueArgsForCall)]
 	fake.setValueArgsForCall = append(fake.setValueArgsForCall, struct {
 		name      string
 		value     values.Value
-		overwrite bool
+		overwrite credhub.Mode
 	}{name, value, overwrite})
 	fake.recordInvocation("SetValue", []interface{}{name, value, overwrite})
 	fake.setValueMutex.Unlock()
@@ -322,7 +323,7 @@ func (fake *FakeCredhubClient) SetValueCallCount() int {
 	return len(fake.setValueArgsForCall)
 }
 
-func (fake *FakeCredhubClient) SetValueArgsForCall(i int) (string, values.Value, bool) {
+func (fake *FakeCredhubClient) SetValueArgsForCall(i int) (string, values.Value, credhub.Mode) {
 	fake.setValueMutex.RLock()
 	defer fake.setValueMutex.RUnlock()
 	return fake.setValueArgsForCall[i].name, fake.setValueArgsForCall[i].value, fake.setValueArgsForCall[i].overwrite

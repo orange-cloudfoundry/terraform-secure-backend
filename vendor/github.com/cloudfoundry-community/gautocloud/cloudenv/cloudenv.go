@@ -11,10 +11,10 @@ type CloudEnv interface {
 	// The loader will call this function and pass a list of tags
 	// You will need to give services which match with those tags
 	// NOTE: tag can be an regex, better to take this in consideration
-	GetServicesFromTags(tags []string) ([]Service)
+	GetServicesFromTags(tags []string) []Service
 	// the loader will call this function and pass a service name as a regex
 	// You will need to give services which match with this name
-	GetServicesFromName(name string) ([]Service)
+	GetServicesFromName(name string) []Service
 	// The loader will call this function to see if this cloud envionment can be use
 	// This function should detect the targeted environment
 	IsInCloudEnv() bool
@@ -26,6 +26,7 @@ type CloudEnv interface {
 type AppInfo struct {
 	Id         string
 	Name       string
+	Port       int
 	Properties map[string]interface{}
 }
 type Service struct {

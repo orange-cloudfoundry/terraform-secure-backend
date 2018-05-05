@@ -52,16 +52,24 @@ var _ = Describe("Api", func() {
 	})
 	Context("Retrieve", func() {
 		It("should giving data from credhub when exists", func() {
-			data := `{"key": "value"}`
+			data := values.JSON{
+				"key": "value",
+			}
 			fakeClient.GetLatestJSONReturns(credentials.JSON{
-				Value: json.RawMessage([]byte(data)),
+				Value: data,
 			}, nil)
 
 			apiController.Retrieve(responseRecorder, httptest.NewRequest("GET", "http://fakeurl.com", nil))
 
 			Expect(fakeClient.GetLatestJSONCallCount()).Should(Equal(1))
 			Expect(responseRecorder.Code).Should(Equal(http.StatusOK))
-			Expect(responseRecorder.Body.String()).Should(Equal(data))
+
+			var resultData map[string]interface{}
+			err := json.Unmarshal(responseRecorder.Body.Bytes(), &resultData)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(resultData).Should(HaveKey("key"))
+			Expect(resultData["key"]).Should(Equal("value"))
 		})
 		It("should answer with http code status no content when there is no data in credhub", func() {
 
@@ -208,7 +216,7 @@ var _ = Describe("Api", func() {
 	Context("List", func() {
 		It("should give a list credentials", func() {
 			req := httptest.NewRequest("GET", "http://fakeurl.com", bytes.NewBufferString(""))
-			fakeClient.FindByPathReturns([]credentials.Base{
+			fakeClient.FindByPathReturns(credentials.FindResults{[]credentials.Base{
 				{
 					Name:             apiController.CredhubName(req) + "data1",
 					VersionCreatedAt: "now",
@@ -221,7 +229,7 @@ var _ = Describe("Api", func() {
 					Name:             apiController.CredhubName(req) + LOCK_SUFFIX,
 					VersionCreatedAt: "now",
 				},
-			}, nil)
+			}}, nil)
 			fakeClient.GetLatestValueReturnsOnCall(0, credentials.Value{}, errors.New("does not exist"))
 			fakeClient.GetLatestValueReturnsOnCall(1, credentials.Value{
 				Value: values.Value("id"),
@@ -243,7 +251,7 @@ var _ = Describe("Api", func() {
 			Expect(creds[1].CurrentLockId).Should(Equal("id"))
 		})
 		It("should panic if find was in error", func() {
-			fakeClient.FindByPathReturns([]credentials.Base{}, errors.New("a fake error"))
+			fakeClient.FindByPathReturns(credentials.FindResults{[]credentials.Base{}}, errors.New("a fake error"))
 			req := httptest.NewRequest("GET", "http://fakeurl.com", nil)
 			Expect(func() {
 				apiController.List(responseRecorder, req)

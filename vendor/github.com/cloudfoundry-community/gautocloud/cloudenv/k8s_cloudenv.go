@@ -1,9 +1,9 @@
 package cloudenv
 
 import (
+	"net/url"
 	"os"
 	"strconv"
-	"net/url"
 	"strings"
 )
 
@@ -33,7 +33,7 @@ func (c KubernetesCloudEnv) SanitizeEnvVars(envVars []string) []string {
 
 		splitEnvVar := strings.Split(envVar, "=")
 		if splitEnvVar[0] == "KUBERNETES_PORT" {
-			finalEnvVars = append(finalEnvVars, "KUBERNETES_URI=" + strings.Join(splitEnvVar[1:], "="))
+			finalEnvVars = append(finalEnvVars, "KUBERNETES_URI="+strings.Join(splitEnvVar[1:], "="))
 
 		}
 		splitEnvVar[0] = strings.Replace(splitEnvVar[0], "_SERVICE", "", -1)
@@ -67,8 +67,9 @@ func (c KubernetesCloudEnv) GetAppInfo() AppInfo {
 	properties["host"] = host
 	properties["port"] = port
 	return AppInfo{
-		Id: name,
-		Name: name,
+		Id:         name,
+		Name:       name,
+		Port:       port,
 		Properties: properties,
 	}
 }

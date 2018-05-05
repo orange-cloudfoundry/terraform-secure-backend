@@ -2,20 +2,18 @@
 package credentials
 
 import (
-	"encoding/json"
-
 	"github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials/values"
 )
 
 // Base fields of a credential
 type Base struct {
-	Name             string `json:"name"`
+	Name             string `json:"name" yaml:"name"`
 	VersionCreatedAt string `json:"version_created_at" yaml:"version_created_at"`
 }
 
 type Metadata struct {
-	Base `yaml:",inline"`
 	Id   string `json:"id"`
+	Base `yaml:",inline"`
 	Type string `json:"type"`
 }
 
@@ -37,8 +35,8 @@ type Value struct {
 
 // A JSON type credential
 type JSON struct {
-	Metadata
-	Value json.RawMessage `json:"value"`
+	Metadata `yaml:",inline"`
+	Value    values.JSON `json:"value"`
 }
 
 // A Password type credential
@@ -77,17 +75,20 @@ type SSH struct {
 	} `json:"value"`
 }
 
-func (j JSON) MarshalYAML() (interface{}, error) {
-	var x interface{}
+// Type needed for Bulk Regenerate functionality
+type BulkRegenerateResults struct {
+	Certificates []string `json:"regenerated_credentials" yaml:"regenerated_credentials"`
+}
 
-	json.Unmarshal(j.Value, &x)
+// Types needed for Find functionality
+type FindResults struct {
+	Credentials []Base `json:"credentials" yaml:"credentials"`
+}
 
-	return struct {
-		Metadata `yaml:",inline"`
-		Value    interface{}
-	}{
-		Metadata: j.Metadata,
-		Value:    x,
-	}, nil
+type Paths struct {
+	Paths []Path `json:"paths" yaml:"paths"`
+}
 
+type Path struct {
+	Path string `json:"path" yaml:"path"`
 }

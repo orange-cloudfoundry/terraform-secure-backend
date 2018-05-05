@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"github.com/cloudfoundry-incubator/credhub-cli/credhub"
 )
 
 type ApiController struct {
@@ -45,12 +46,13 @@ func (c ApiController) Store(w http.ResponseWriter, req *http.Request) {
 		entry.Error(err)
 		panic(err)
 	}
-	_, err = c.credhubClient.SetJSON(c.CredhubName(req), values.JSON(dataJson), true)
+	_, err = c.credhubClient.SetJSON(c.CredhubName(req), values.JSON(dataJson), credhub.Overwrite)
 	if err != nil {
 		entry.Error(err)
 		panic(err)
 	}
 }
+
 func (c ApiController) Retrieve(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 	entry := logrus.WithField("action", "retrieve").WithField("name", c.RequestName(req))
@@ -65,7 +67,8 @@ func (c ApiController) Retrieve(w http.ResponseWriter, req *http.Request) {
 		panic(err)
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(cred.Value)
+	b, _ := json.Marshal(cred.Value)
+	w.Write(b)
 }
 
 func (c ApiController) Delete(w http.ResponseWriter, req *http.Request) {
@@ -84,6 +87,7 @@ func (c ApiController) Delete(w http.ResponseWriter, req *http.Request) {
 		panic(err)
 	}
 }
+
 func (c ApiController) Lock(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 	var info *state.LockInfo
@@ -115,16 +119,20 @@ func (c ApiController) Lock(w http.ResponseWriter, req *http.Request) {
 		panic(err)
 	}
 }
+
 func (c ApiController) Path() string {
 	return fmt.Sprintf("%s/%s", CREDHUB_PREFIX, c.name)
 }
+
 func (c ApiController) CredhubName(req *http.Request) string {
 	return fmt.Sprintf("%s/%s", c.Path(), c.RequestName(req))
 }
+
 func (c ApiController) RequestName(req *http.Request) string {
 	vars := mux.Vars(req)
 	return vars["name"]
 }
+
 func (c ApiController) UnLock(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 	var info *state.LockInfo
@@ -155,13 +163,15 @@ func (c ApiController) UnLock(w http.ResponseWriter, req *http.Request) {
 		panic(err)
 	}
 }
+
 func (c ApiController) List(w http.ResponseWriter, req *http.Request) {
 	entry := logrus.WithField("action", "list")
-	creds, err := c.credhubClient.FindByPath(c.Path())
+	result, err := c.credhubClient.FindByPath(c.Path())
 	if err != nil {
 		entry.Error(err)
 		panic(err)
 	}
+	creds := result.Credentials
 	backendCreds := make([]CredModel, 0)
 	for _, cred := range creds {
 		name := cred.Name
@@ -185,6 +195,7 @@ func (c ApiController) List(w http.ResponseWriter, req *http.Request) {
 	b, _ := json.MarshalIndent(backendCreds, "", "\t")
 	w.Write(b)
 }
+
 func ParseTfName(credhubName string) string {
 	splited := strings.Split(credhubName, "/")
 	return splited[len(splited)-1]

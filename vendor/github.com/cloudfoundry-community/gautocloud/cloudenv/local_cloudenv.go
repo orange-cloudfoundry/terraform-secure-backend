@@ -14,8 +14,10 @@ import (
 )
 
 const (
-	LOCAL_ENV_KEY       = "CLOUD_FILE"
-	SERVICES_CONFIG_KEY = "services"
+	LOCAL_ENV_KEY        = "CLOUD_FILE"
+	LOCAL_CONFIG_ENV_KEY = "CONFIG_FILE"
+	DEFAULT_CONFIG_PATH  = "config.yml"
+	SERVICES_CONFIG_KEY  = "services"
 )
 
 type LocalCloudEnv struct {
@@ -34,8 +36,63 @@ func NewLocalCloudEnv() CloudEnv {
 	cloudEnv.servicesLocal = make([]ServiceLocal, 0)
 	return cloudEnv
 }
+func NewLocalCloudEnvFromReader(r io.Reader, configType string) CloudEnv {
+	cloudEnv := &LocalCloudEnv{}
+	viper.SetConfigType(configType)
+	err := viper.ReadConfig(r)
+	if err != nil {
+		panic(fmt.Errorf("Fatal error on reading cloud file: %s \n", err))
+	}
+	cloudEnv.loadServices(viper.Get(SERVICES_CONFIG_KEY))
+	cloudEnv.loadAppName()
+	return cloudEnv
+}
 func (c *LocalCloudEnv) Load() error {
+	if c.hasCloudFile() {
+		err := c.loadCloudFile()
+		if err != nil {
+			return err
+		}
+	}
+	err := c.loadConfigFile()
+	if err != nil {
+		return err
+	}
 
+	c.loadAppName()
+	return nil
+}
+func (c *LocalCloudEnv) loadConfigFile() error {
+	confPath := c.configPath()
+	_, err := os.Stat(confPath)
+	if err != nil {
+		c.servicesLocal = append(c.servicesLocal, ServiceLocal{
+			"config",
+			[]string{"config"},
+			make(map[string]interface{}),
+		})
+		return nil
+	}
+	viper.SetConfigType(filepath.Ext(confPath)[1:])
+	viper.SetConfigFile(confPath)
+	err = viper.ReadInConfig()
+	if err != nil {
+		return errors.New(fmt.Sprintf("Fatal error on reading config file: %s \n", err.Error()))
+	}
+	var creds map[interface{}]interface{}
+	err = viper.Unmarshal(&creds)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Fatal error when unmarshaling config file: %s \n", err.Error()))
+	}
+	finalCreds := c.convertMapInterface(creds).(map[string]interface{})
+	c.servicesLocal = append(c.servicesLocal, ServiceLocal{
+		"config",
+		[]string{"config"},
+		finalCreds,
+	})
+	return nil
+}
+func (c *LocalCloudEnv) loadCloudFile() error {
 	viper.SetConfigType(filepath.Ext(os.Getenv(LOCAL_ENV_KEY))[1:])
 	viper.SetConfigFile(os.Getenv(LOCAL_ENV_KEY))
 	err := viper.ReadInConfig()
@@ -48,20 +105,9 @@ func (c *LocalCloudEnv) Load() error {
 	} else {
 		c.servicesLocal = make([]ServiceLocal, 0)
 	}
-	c.loadAppName()
 	return nil
 }
-func NewLocalCloudEnvFromReader(r io.Reader, configType string) CloudEnv {
-	cloudEnv := &LocalCloudEnv{}
-	viper.SetConfigType(configType)
-	err := viper.ReadConfig(r)
-	if err != nil {
-		panic(fmt.Errorf("Fatal error on reading cloud file: %s \n", err))
-	}
-	cloudEnv.loadServices(viper.Get(SERVICES_CONFIG_KEY))
-	cloudEnv.loadAppName()
-	return cloudEnv
-}
+
 func (c *LocalCloudEnv) loadAppName() {
 	c.appName = "<unknown>"
 	appName := viper.Get("app_name")
@@ -170,11 +216,23 @@ func (c *LocalCloudEnv) loadServices(v interface{}) {
 	}
 	c.servicesLocal = services
 }
-func (c LocalCloudEnv) IsInCloudEnv() bool {
-	if os.Getenv(LOCAL_ENV_KEY) != "" {
-		return true
+
+func (c LocalCloudEnv) configPath() string {
+	confPath := DEFAULT_CONFIG_PATH
+	if os.Getenv(LOCAL_CONFIG_ENV_KEY) != "" {
+		confPath = os.Getenv(LOCAL_CONFIG_ENV_KEY)
 	}
-	return false
+	return confPath
+}
+
+func (c LocalCloudEnv) hasConfigFile() bool {
+	return os.Getenv(LOCAL_CONFIG_ENV_KEY) != ""
+}
+func (c LocalCloudEnv) hasCloudFile() bool {
+	return os.Getenv(LOCAL_ENV_KEY) != ""
+}
+func (c LocalCloudEnv) IsInCloudEnv() bool {
+	return true
 }
 func (c *LocalCloudEnv) GetAppInfo() AppInfo {
 	id := c.id
@@ -185,6 +243,7 @@ func (c *LocalCloudEnv) GetAppInfo() AppInfo {
 	return AppInfo{
 		Id:         c.id,
 		Name:       c.appName,
+		Port:       0,
 		Properties: make(map[string]interface{}),
 	}
 

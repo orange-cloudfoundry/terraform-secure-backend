@@ -4,7 +4,6 @@ import (
 	"github.com/cloudfoundry-community/gautocloud/cloudenv"
 	"github.com/cloudfoundry-community/gautocloud/connectors"
 	"github.com/cloudfoundry-community/gautocloud/loader"
-	"github.com/cloudfoundry-community/gautocloud/logger"
 	"github.com/golang/mock/gomock"
 	"log"
 )
@@ -23,11 +22,11 @@ type _MockLoaderRecorder struct {
 type MockTestReporter struct{}
 
 func (g MockTestReporter) Errorf(format string, args ...interface{}) {
-	log.Printf("[ERROR GAUTOCLOUD MOCK LOADER] " + format, args...)
+	log.Printf("[ERROR GAUTOCLOUD MOCK LOADER] "+format, args...)
 }
 
 func (g MockTestReporter) Fatalf(format string, args ...interface{}) {
-	log.Fatalf("[FAIL GAUTOCLOUD MOCK LOADER] " + format, args...)
+	log.Fatalf("[FAIL GAUTOCLOUD MOCK LOADER] "+format, args...)
 }
 func NewMockLoader() *MockLoader {
 
@@ -35,6 +34,7 @@ func NewMockLoader() *MockLoader {
 	mock.recorder = &_MockLoaderRecorder{mock}
 	return mock
 }
+
 func (_m *MockLoader) EXPECT() *_MockLoaderRecorder {
 	return _m.recorder
 }
@@ -155,12 +155,12 @@ func (_mr *_MockLoaderRecorder) ReloadConnectors() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ReloadConnectors")
 }
 
-func (_m *MockLoader) SetLogger(_param0 *log.Logger, _param1 logger.Level) {
-	_m.ctrl.Call(_m, "SetLogger", _param0, _param1)
+func (_m *MockLoader) ShowPreviousLog() {
+	_m.ctrl.Call(_m, "ShowPreviousLog")
 }
 
-func (_mr *_MockLoaderRecorder) SetLogger(arg0, arg1 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "SetLogger", arg0, arg1)
+func (_mr *_MockLoaderRecorder) ShowPreviousLog() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "ShowPreviousLog")
 }
 
 func (_m *MockLoader) Store() map[string][]loader.StoredService {

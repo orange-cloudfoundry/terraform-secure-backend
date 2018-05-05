@@ -1,14 +1,10 @@
 package gautocloud
 
 import (
-	"github.com/cloudfoundry-community/gautocloud/loader"
 	"github.com/cloudfoundry-community/gautocloud/cloudenv"
 	"github.com/cloudfoundry-community/gautocloud/connectors"
-	"log"
-	"github.com/cloudfoundry-community/gautocloud/logger"
+	"github.com/cloudfoundry-community/gautocloud/loader"
 )
-
-
 
 // Return the loader used by the facade
 func Loader() loader.Loader {
@@ -95,27 +91,25 @@ func Store() map[string][]loader.StoredService {
 func CleanConnectors() {
 	defaultLoader.CleanConnectors()
 }
-// Pass a logger to the loader to let you have the possibility to see logs
-// the parameter lvl is the level of verbosity which can be
-//  - logger.Lall
-//  - logger.Loff
-//  - logger.Ldebug
-//  - logger.Linfo
-//  - logger.Lwarning
-//  - logger.Lerror
-//  - logger.Lsevere
-func SetLogger(logger *log.Logger, lvl logger.Level) {
-	defaultLoader.SetLogger(logger, lvl)
-}
+
 // Return the current cloud env detected
 func CurrentCloudEnv() cloudenv.CloudEnv {
 	return defaultLoader.CurrentCloudEnv()
 }
+
 // Return informations about instance of the running application
 func GetAppInfo() cloudenv.AppInfo {
 	return defaultLoader.GetAppInfo()
 }
+
 // Return true if you are in a cloud environment
 func IsInACloudEnv() bool {
 	return defaultLoader.IsInACloudEnv()
+}
+
+// Show previous logs entries created at initialization
+// Prefer set a GAUTOCLOUD_DEBUG env var to true (or `json` to see logs as json) to see debug message at load too
+// In some situation, this can be useful.
+func ShowPreviousLog() {
+	defaultLoader.ShowPreviousLog()
 }

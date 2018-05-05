@@ -1,33 +1,31 @@
 package credhub
 
-import "github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials"
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials"
+)
 
 // Regenerate generates and returns a new credential version using the same parameters existing credential. The returned credential may be of any type.
 func (ch *CredHub) Regenerate(name string) (credentials.Credential, error) {
-	panic("Not implemented")
-}
+	var cred credentials.Credential
 
-// RegeneratePassword generates and returns a new credential version using the same parameters existing credential. The returned credential must be of type 'password'.
-func (ch *CredHub) RegeneratePassword(name string) (credentials.Password, error) {
-	panic("Not implemented")
-}
+	regenerateEndpoint := "/api/v1/data"
 
-// RegenerateUser generates and returns a new credential version using the same parameters existing credential. The returned credential must be of type 'user'.
-func (ch *CredHub) RegenerateUser(name string) (credentials.User, error) {
-	panic("Not implemented")
-}
+	requestBody := map[string]interface{}{}
+	requestBody["name"] = name
+	requestBody["regenerate"] = true
 
-// RegenerateCertificate generates and returns a new credential version using the same parameters existing credential. The returned credential must be of type 'certificate'.
-func (ch *CredHub) RegenerateCertificate(name string) (credentials.Certificate, error) {
-	panic("Not implemented")
-}
+	resp, err := ch.Request(http.MethodPost, regenerateEndpoint, nil, requestBody, true)
 
-// RegenerateRSA generates and returns a new credential version using the same parameters existing credential. The returned credential must be of type 'rsa'.
-func (ch *CredHub) RegenerateRSA(name string) (credentials.RSA, error) {
-	panic("Not implemented")
-}
+	if err != nil {
+		return credentials.Credential{}, err
+	}
 
-// RegenerateSSH generates and returns a new credential version using the same parameters existing credential. The returned credential must be of type 'ssh'.
-func (ch *CredHub) RegenerateSSH(name string) (credentials.SSH, error) {
-	panic("Not implemented")
+	defer resp.Body.Close()
+	dec := json.NewDecoder(resp.Body)
+	err = dec.Decode(&cred)
+
+	return cred, err
 }

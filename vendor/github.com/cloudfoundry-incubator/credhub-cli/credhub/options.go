@@ -1,9 +1,11 @@
 package credhub
 
 import (
+	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"net/url"
+	"runtime"
 
 	"github.com/cloudfoundry-incubator/credhub-cli/credhub/auth"
 )
@@ -25,9 +27,12 @@ func Auth(method auth.Builder) Option {
 // If AuthURL provided, the AuthURL will be fetched from /info.
 func AuthURL(authURL string) Option {
 	return func(c *CredHub) error {
-		var err error
-		c.authURL, err = url.Parse(authURL)
-		return err
+		if authURL != "" {
+			var err error
+			c.authURL, err = url.Parse(authURL)
+			return err
+		}
+		return nil
 	}
 }
 
@@ -37,7 +42,19 @@ func AuthURL(authURL string) Option {
 // connections with the OAuth server.
 func CaCerts(certs ...string) Option {
 	return func(c *CredHub) error {
-		c.caCerts = x509.NewCertPool()
+		// TODO: remove else block once x509.SystemCertPool is supported on Windows
+		// see: https://github.com/golang/go/issues/16736
+		var pool *x509.CertPool
+		if runtime.GOOS != "windows" {
+			var err error
+			pool, err = x509.SystemCertPool()
+			if err != nil {
+				return err
+			}
+		} else {
+			pool = x509.NewCertPool()
+		}
+		c.caCerts = pool
 
 		for _, cert := range certs {
 			ok := c.caCerts.AppendCertsFromPEM([]byte(cert))
@@ -54,6 +71,19 @@ func CaCerts(certs ...string) Option {
 func SkipTLSValidation(skipTLSvalidation bool) Option {
 	return func(c *CredHub) error {
 		c.insecureSkipVerify = skipTLSvalidation
+		return nil
+	}
+}
+
+// ClientCert will use a certificate for authentication
+func ClientCert(certificate, key string) Option {
+	return func(c *CredHub) error {
+		cert, err := tls.LoadX509KeyPair(certificate, key)
+		if err != nil {
+			return err
+		}
+		c.clientCertificate = &cert
+
 		return nil
 	}
 }

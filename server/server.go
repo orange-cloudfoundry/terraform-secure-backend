@@ -62,6 +62,7 @@ func NewServer(config *ServerConfig) (*Server, error) {
 	}
 	return server, nil
 }
+
 func NewCloudServer() (*Server, error) {
 	config := &ServerConfig{}
 	err := gautocloud.Inject(config)
@@ -71,6 +72,7 @@ func NewCloudServer() (*Server, error) {
 	log.Info("Loading config from cloud environment")
 	return NewServer(config)
 }
+
 func (s Server) loadLogConfig() {
 	if s.config.LogJson {
 		log.SetFormatter(&log.JSONFormatter{})
@@ -101,6 +103,7 @@ func (s Server) loadLogConfig() {
 	}
 	return
 }
+
 func (s *Server) Load() error {
 	s.loadLogConfig()
 	if s.config.Port == 0 {
@@ -136,6 +139,7 @@ func (s *Server) Load() error {
 	}
 	return nil
 }
+
 func (s Server) loadHandler() error {
 	credhubClient, err := s.CreateCredhubCli()
 	if err != nil {
@@ -145,7 +149,6 @@ func (s Server) loadHandler() error {
 	controller := NewApiController(s.config.Name, credhubClient, store)
 	rtr := mux.NewRouter()
 	apiRtr := rtr.PathPrefix("/states").Subrouter()
-	apiRtr.HandleFunc("/{name}", controller.Store).Methods("POST")
 	apiRtr.HandleFunc("/{name}", controller.Retrieve).Methods("GET")
 	apiRtr.HandleFunc("/{name}", controller.Delete).Methods("DELETE")
 	apiRtr.HandleFunc("/{name}", controller.Lock).Methods("LOCK")
@@ -158,6 +161,7 @@ func (s Server) loadHandler() error {
 	}
 	return nil
 }
+
 func (s Server) runTls(servAddr string, handler http.Handler) (bool, error) {
 	if s.config.Cert == "" || s.config.Key == "" {
 		return false, fmt.Errorf("No certificate or key provided")
@@ -168,6 +172,7 @@ func (s Server) runTls(servAddr string, handler http.Handler) (bool, error) {
 	}
 	return true, nil
 }
+
 func (s Server) Run() error {
 	finalHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		defer s.panicRecover(w)
@@ -192,6 +197,7 @@ func (s Server) Run() error {
 	log.Infof("Serving an insecure server in http on address '%s'", servAddr)
 	return http.ListenAndServe(servAddr, finalHandler)
 }
+
 func (s Server) getTlsFilePath(tlsConf string) (string, error) {
 	if tlsConf == "" {
 		return "", nil
@@ -211,6 +217,7 @@ func (s Server) getTlsFilePath(tlsConf string) (string, error) {
 	f.WriteString(tlsConf)
 	return f.Name(), nil
 }
+
 func (s Server) CreateCredhubCli() (*credhub.CredHub, error) {
 	apiEndpoint := strings.TrimPrefix(s.config.CredhubServer, "http://")
 	if !strings.HasPrefix(apiEndpoint, "https://") {
@@ -241,6 +248,7 @@ func (s Server) CreateCredhubCli() (*credhub.CredHub, error) {
 	}
 	return credhub.New(apiEndpoint, options...)
 }
+
 func (s Server) panicRecover(w http.ResponseWriter) {
 	err := recover()
 	if err == nil {

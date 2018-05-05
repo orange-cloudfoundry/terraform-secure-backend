@@ -1,9 +1,9 @@
 package cloudenv
 
 import (
+	"net"
 	"os"
 	"strconv"
-	"net"
 )
 
 type HerokuCloudEnv struct {
@@ -32,10 +32,10 @@ func (c HerokuCloudEnv) externalIP() string {
 		return ""
 	}
 	for _, iface := range ifaces {
-		if iface.Flags & net.FlagUp == 0 {
+		if iface.Flags&net.FlagUp == 0 {
 			continue // interface down
 		}
-		if iface.Flags & net.FlagLoopback != 0 {
+		if iface.Flags&net.FlagLoopback != 0 {
 			continue // loopback interface
 		}
 		addrs, err := iface.Addrs()
@@ -68,13 +68,15 @@ func (c HerokuCloudEnv) GetAppInfo() AppInfo {
 	if name == "" {
 		name = "<unknown>"
 	}
+	extIp := c.externalIP()
 	port, _ := strconv.Atoi(c.GetEnvValueName("PORT"))
 	return AppInfo{
-		Id: c.GetEnvValueName("DYNO"),
+		Id:   c.GetEnvValueName("DYNO"),
 		Name: name,
+		Port: port,
 		Properties: map[string]interface{}{
 			"port": port,
-			"host": c.externalIP(),
+			"host": extIp,
 		},
 	}
 }

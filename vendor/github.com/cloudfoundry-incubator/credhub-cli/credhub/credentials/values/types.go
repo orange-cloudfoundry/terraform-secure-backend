@@ -3,7 +3,7 @@ package values
 
 type Value string
 
-type JSON interface{}
+type JSON map[string]interface{}
 
 type Password string
 

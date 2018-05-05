@@ -17,7 +17,7 @@ type ServerApp struct {
 func NewApp() *ServerApp {
 	app := &ServerApp{cli.NewApp()}
 	app.Name = "terraform-secure-backend"
-	app.Version = "1.0.0"
+	app.Version = "1.1.0"
 	app.Usage = "An http server to store terraform state file securely"
 	app.ErrWriter = os.Stderr
 	app.Flags = []cli.Flag{

@@ -21,7 +21,7 @@ func NewCfCloudEnvWithAppEnv(appEnv *cfenv.App) CloudEnv {
 func (c CfCloudEnv) Name() string {
 	return "cloudfoundry"
 }
-func (c CfCloudEnv) GetServicesFromTags(tags []string) ([]Service) {
+func (c CfCloudEnv) GetServicesFromTags(tags []string) []Service {
 	if len(tags) == 0 {
 		return make([]Service, 0)
 	}
@@ -44,7 +44,7 @@ func (c CfCloudEnv) convertCfServices(cfServices []cfenv.Service) []Service {
 	}
 	return services
 }
-func (c CfCloudEnv) initAppEnv() (error) {
+func (c CfCloudEnv) initAppEnv() error {
 	if !c.IsInCloudEnv() {
 		return nil
 	}
@@ -69,7 +69,7 @@ func (c *CfCloudEnv) Load() error {
 	}
 	return err
 }
-func (c CfCloudEnv) GetServicesFromName(name string) ([]Service) {
+func (c CfCloudEnv) GetServicesFromName(name string) []Service {
 	servicesFound, err := c.appEnv.Services.WithNameUsingPattern(name)
 	if err != nil {
 		return make([]Service, 0)
@@ -84,21 +84,22 @@ func (c CfCloudEnv) IsInCloudEnv() bool {
 }
 func (c CfCloudEnv) GetAppInfo() AppInfo {
 	return AppInfo{
-		Id: c.appEnv.ID,
+		Id:   c.appEnv.ID,
 		Name: c.appEnv.Name,
+		Port: c.appEnv.Port,
 		Properties: map[string]interface{}{
-			"uris": c.appEnv.ApplicationURIs,
-			"host": c.appEnv.Host,
-			"home": c.appEnv.Home,
-			"index": c.appEnv.Index,
+			"uris":         c.appEnv.ApplicationURIs,
+			"host":         c.appEnv.Host,
+			"home":         c.appEnv.Home,
+			"index":        c.appEnv.Index,
 			"memory_limit": c.appEnv.MemoryLimit,
-			"port": c.appEnv.Port,
-			"space_id": c.appEnv.SpaceID,
-			"space_name": c.appEnv.SpaceName,
-			"temp_dir": c.appEnv.TempDir,
-			"user": c.appEnv.User,
-			"version": c.appEnv.Version,
-			"working_dir": c.appEnv.WorkingDir,
+			"port":         c.appEnv.Port,
+			"space_id":     c.appEnv.SpaceID,
+			"space_name":   c.appEnv.SpaceName,
+			"temp_dir":     c.appEnv.TempDir,
+			"user":         c.appEnv.User,
+			"version":      c.appEnv.Version,
+			"working_dir":  c.appEnv.WorkingDir,
 		},
 	}
 }
