@@ -1,8 +1,8 @@
 # Terraform-secure-backend [![Build Status](https://travis-ci.org/orange-cloudfoundry/terraform-secure-backend.svg?branch=master)](https://travis-ci.org/orange-cloudfoundry/terraform-secure-backend)
 
-An [http backend](https://www.terraform.io/docs/backends/types/http.html) which store and retrieve tfstates files in a secure way by encrypt/decrypt them through [credhub](https://github.com/cloudfoundry-incubator/credhub).
+An [http backend](https://www.terraform.io/docs/backends/types/http.html) which stores and retrieves tfstates files in a secure and encrypted way through [credhub](https://github.com/cloudfoundry-incubator/credhub).
 
-This backend support lock and unlock too.
+This backend supports [state locking](https://www.terraform.io/docs/state/locking.html).
 
 ## Installation
 
@@ -27,7 +27,7 @@ $ sh -c "$(wget https://raw.github.com/orange-cloudfoundry/terraform-secure-back
 ### On windows
 
 You can install it by downloading the `.exe` corresponding to your cpu from releases page: https://github.com/orange-cloudfoundry/terraform-secure-backend/releases .
-Alternatively, if you have terminal interpreting shell you can also use command line script above, it will download file in your current working dir.
+Alternatively, if you have a terminal interpreting shell you can also use command line script above, it will download file in your current working dir.
 
 ## Commands
 
@@ -83,7 +83,7 @@ credhub_ca_cert: ~ // You can set the credhub ca_cert here if it's a self signed
 skip_ssl_validation: false // set to true to skip ssl validation when connecting to your credhub (prefer use credhub_ca_cert for security reasons)
 ```
 
-2. Run `./terraform-secure-backend` in your terminal and server is now started
+2. Run `./terraform-secure-backend` in your terminal and server is now started.
 
 ### In a cloud
   
@@ -130,6 +130,6 @@ terraform {
 
 ## Api
 
-Api implement [http backend](https://www.terraform.io/docs/backends/types/http.html) on each `https://path.to.my.secure.backend.com/states/<deployment name>`.
+The Api implements the terraform [http backend API](https://www.terraform.io/docs/backends/types/http.html) on each `https://path.to.my.secure.backend.com/states/<deployment name>`.
 
 You can list all tfstates stored by calling: `https://path.to.my.secure.backend.com/states`
