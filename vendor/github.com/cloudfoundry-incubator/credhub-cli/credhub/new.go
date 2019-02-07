@@ -3,7 +3,7 @@ package credhub
 import (
 	"net/url"
 
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/auth"
+	"code.cloudfoundry.org/credhub-cli/credhub/auth"
 )
 
 // New provides a CredHub API client for the target server. Options can be
@@ -32,7 +32,6 @@ func New(target string, options ...Option) (*CredHub, error) {
 	}
 
 	credhub.Auth, err = credhub.authBuilder(credhub)
-
 	if err != nil {
 		return nil, err
 	}

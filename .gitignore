@@ -1,3 +1,5 @@
 /lockstore
 /terraform-secure-backend
 /*-config.yml
+/vendor
+/out

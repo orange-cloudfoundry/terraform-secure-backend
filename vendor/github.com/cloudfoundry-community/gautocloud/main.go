@@ -107,9 +107,7 @@ func IsInACloudEnv() bool {
 	return defaultLoader.IsInACloudEnv()
 }
 
-// Show previous logs entries created at initialization
-// Prefer set a GAUTOCLOUD_DEBUG env var to true (or `json` to see logs as json) to see debug message at load too
-// In some situation, this can be useful.
-func ShowPreviousLog() {
-	defaultLoader.ShowPreviousLog()
+// Reload environment and connectors
+func Reload() {
+	defaultLoader.Reload()
 }

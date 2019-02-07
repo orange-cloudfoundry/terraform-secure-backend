@@ -4,10 +4,10 @@ import (
 	. "github.com/orange-cloudfoundry/terraform-secure-backend/server"
 
 	"bytes"
+	"code.cloudfoundry.org/credhub-cli/credhub/credentials"
+	"code.cloudfoundry.org/credhub-cli/credhub/credentials/values"
 	"encoding/json"
 	"errors"
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials"
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials/values"
 	"github.com/hashicorp/terraform/state"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

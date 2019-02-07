@@ -14,10 +14,10 @@ type ServerApp struct {
 	*cli.App
 }
 
-func NewApp() *ServerApp {
+func NewApp(version string) *ServerApp {
 	app := &ServerApp{cli.NewApp()}
 	app.Name = "terraform-secure-backend"
-	app.Version = "1.1.0"
+	app.Version = version
 	app.Usage = "An http server to store terraform state file securely"
 	app.ErrWriter = os.Stderr
 	app.Flags = []cli.Flag{
@@ -36,8 +36,8 @@ func (a *ServerApp) Run(arguments []string) (err error) {
 	return a.App.Run(arguments)
 }
 func (a *ServerApp) RunServer(c *cli.Context) error {
-	if gautocloud.IsInACloudEnv() {
-		gobisServer, err := server.NewCloudServer()
+	if gautocloud.IsInACloudEnv() && gautocloud.CurrentCloudEnv().Name() != "localcloud" {
+		gobisServer, err := server.NewCloudServer(a.Version)
 		if err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ func (a *ServerApp) RunServer(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	gobisServer, err := server.NewServer(config)
+	gobisServer, err := server.NewServer(a.Version, config)
 	if err != nil {
 		return err
 	}

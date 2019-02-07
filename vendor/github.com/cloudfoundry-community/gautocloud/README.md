@@ -14,6 +14,7 @@ This project can be assimilated to the [spring-cloud-connector](https://github.c
 
 - [Usage by example](#usage-by-example)
 - [Default connectors](/docs/connectors.md)
+- [Community connectors](/wiki/Connectors)
 - [Cloud Environments](#cloud-environments)
   - [Cloud Foundry](#cloud-foundry)
   - [Heroku](#heroku)

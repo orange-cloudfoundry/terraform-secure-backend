@@ -1,16 +1,17 @@
 package server
 
 import (
+	"code.cloudfoundry.org/credhub-cli/credhub"
+	"code.cloudfoundry.org/credhub-cli/credhub/auth"
 	"encoding/json"
 	"fmt"
 	"github.com/cloudfoundry-community/gautocloud"
 	"github.com/cloudfoundry-community/gautocloud/connectors/generic"
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub"
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/auth"
 	"github.com/goji/httpauth"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/acme/autocert"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -47,15 +48,19 @@ type ServerConfig struct {
 	CredhubCaCert      string   `json:"credhub_ca_cert" yaml:"credhub_ca_cert"`
 	SkipSslValidation  bool     `json:"skip_ssl_validation" yaml:"skip_ssl_validation"`
 	ShowError          bool     `json:"show_error" yaml:"show_error"`
+	CEF                bool     `json:"cef" yaml:"cef"`
+	CEFFile            string   `json:"cef-file" yaml:"cef-file"`
+	DryRun             bool     `json:"dry-run" yaml:"dry-run"`
 }
 
 type Server struct {
 	config  *ServerConfig
 	handler http.Handler
+	version string
 }
 
-func NewServer(config *ServerConfig) (*Server, error) {
-	server := &Server{config: config}
+func NewServer(version string, config *ServerConfig) (*Server, error) {
+	server := &Server{config: config, version: version}
 	err := server.Load()
 	if err != nil {
 		return nil, err
@@ -63,14 +68,14 @@ func NewServer(config *ServerConfig) (*Server, error) {
 	return server, nil
 }
 
-func NewCloudServer() (*Server, error) {
+func NewCloudServer(version string) (*Server, error) {
 	config := &ServerConfig{}
 	err := gautocloud.Inject(config)
 	if err != nil {
 		return nil, err
 	}
 	log.Info("Loading config from cloud environment")
-	return NewServer(config)
+	return NewServer(version, config)
 }
 
 func (s Server) loadLogConfig() {
@@ -110,7 +115,7 @@ func (s *Server) Load() error {
 		port, _ := strconv.Atoi(os.Getenv("PORT"))
 		s.config.Port = port
 	}
-	if gautocloud.IsInACloudEnv() {
+	if gautocloud.IsInACloudEnv() && gautocloud.CurrentCloudEnv().Name() != "localcloud" {
 		if _, ok := gautocloud.GetAppInfo().Properties["port"]; ok {
 			s.config.Port = gautocloud.GetAppInfo().Properties["port"].(int)
 		}
@@ -140,7 +145,7 @@ func (s *Server) Load() error {
 	return nil
 }
 
-func (s Server) loadHandler() error {
+func (s *Server) loadHandler() error {
 	credhubClient, err := s.CreateCredhubCli()
 	if err != nil {
 		return err
@@ -148,6 +153,17 @@ func (s Server) loadHandler() error {
 	store := NewLockStore(credhubClient)
 	controller := NewApiController(s.config.Name, credhubClient, store)
 	rtr := mux.NewRouter()
+	if s.config.CEF {
+		var cefW io.Writer = os.Stdout
+		if s.config.CEFFile != "" {
+			cefW, err = os.OpenFile(s.config.CEFFile, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
+			if err != nil {
+				return fmt.Errorf("Error when opening cef file log: %s", err.Error())
+			}
+		}
+		cefMiddleware := NewCEFMiddleware(cefW, s.version)
+		rtr.Use(cefMiddleware.Middleware)
+	}
 	apiRtr := rtr.PathPrefix("/states").Subrouter()
 	apiRtr.HandleFunc("/{name}", controller.Retrieve).Methods("GET")
 	apiRtr.HandleFunc("/{name}", controller.Delete).Methods("DELETE")
@@ -155,10 +171,9 @@ func (s Server) loadHandler() error {
 	apiRtr.HandleFunc("/{name}", controller.UnLock).Methods("UNLOCK")
 	rtr.HandleFunc("/states", controller.List).Methods("GET")
 	if s.config.Username != "" {
-		s.handler = httpauth.SimpleBasicAuth(s.config.Username, s.config.Password)(rtr)
-	} else {
-		s.handler = rtr
+		rtr.Use(httpauth.SimpleBasicAuth(s.config.Username, s.config.Password))
 	}
+	s.handler = rtr
 	return nil
 }
 
@@ -218,7 +233,10 @@ func (s Server) getTlsFilePath(tlsConf string) (string, error) {
 	return f.Name(), nil
 }
 
-func (s Server) CreateCredhubCli() (*credhub.CredHub, error) {
+func (s Server) CreateCredhubCli() (CredhubClient, error) {
+	if s.config.DryRun {
+		return &NullCredhubClient{}, nil
+	}
 	apiEndpoint := strings.TrimPrefix(s.config.CredhubServer, "http://")
 	if !strings.HasPrefix(apiEndpoint, "https://") {
 		apiEndpoint = "https://" + apiEndpoint

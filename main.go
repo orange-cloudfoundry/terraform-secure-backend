@@ -5,7 +5,9 @@ import (
 	"os"
 )
 
-func main(){
-	server := cli.NewApp()
-	server.Run(os.Args)
+var Version string
+
+func main() {
+	server := cli.NewApp(Version)
+	panic(server.Run(os.Args))
 }

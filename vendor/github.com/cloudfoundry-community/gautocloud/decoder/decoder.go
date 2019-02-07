@@ -82,7 +82,7 @@ func UnmarshalToValue(serviceCredentials map[string]interface{}, ps reflect.Valu
 		if noDefaultVal {
 			defaultValue = ""
 		}
-		data := retrieveFinalData(vField.Kind(), serviceCredentials, key, defaultValue)
+		data := retrieveFinalData(vField.Type(), serviceCredentials, key, defaultValue)
 		if data == nil {
 			continue
 		}
@@ -330,11 +330,11 @@ func getDefaultTagValue(tags []string) string {
 	}
 	return ""
 }
-func retrieveFinalData(kind reflect.Kind, serviceCredentials map[string]interface{}, key, defaultValue string) interface{} {
+func retrieveFinalData(typeOf reflect.Type, serviceCredentials map[string]interface{}, key, defaultValue string) interface{} {
 	valueExists := isValueExists(serviceCredentials, key)
 	if !valueExists &&
 		defaultValue == "" &&
-		kind != reflect.Struct {
+		typeOf.Kind() != reflect.Struct {
 		return nil
 	}
 	if valueExists {
@@ -343,8 +343,11 @@ func retrieveFinalData(kind reflect.Kind, serviceCredentials map[string]interfac
 	if !valueExists && defaultValue != "" {
 		return defaultValue
 	}
-	if !valueExists && kind == reflect.Struct {
+	if !valueExists && typeOf.Kind() == reflect.Struct && reflect.TypeOf(ServiceUri{}) == typeOf {
 		return make(map[string]interface{})
+	}
+	if !valueExists && typeOf.Kind() == reflect.Struct {
+		return serviceCredentials
 	}
 	return nil
 }

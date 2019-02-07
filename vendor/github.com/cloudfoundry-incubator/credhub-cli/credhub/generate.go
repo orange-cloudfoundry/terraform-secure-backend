@@ -2,10 +2,12 @@ package credhub
 
 import (
 	"encoding/json"
+	"io"
+	"io/ioutil"
 	"net/http"
 
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials"
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials/generate"
+	"code.cloudfoundry.org/credhub-cli/credhub/credentials"
+	"code.cloudfoundry.org/credhub-cli/credhub/credentials/generate"
 )
 
 // GeneratePassword generates a password credential based on the provided parameters.
@@ -75,6 +77,7 @@ func (ch *CredHub) generateCredential(name, credType string, gen interface{}, ov
 	}
 
 	defer resp.Body.Close()
+	defer io.Copy(ioutil.Discard, resp.Body)
 	dec := json.NewDecoder(resp.Body)
 
 	if err := ch.checkForServerError(resp); err != nil {

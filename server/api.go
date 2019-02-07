@@ -1,16 +1,15 @@
 package server
 
 import (
+	"code.cloudfoundry.org/credhub-cli/credhub/credentials/values"
 	"encoding/json"
 	"fmt"
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials/values"
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/terraform/state"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub"
 )
 
 type ApiController struct {
@@ -46,7 +45,7 @@ func (c ApiController) Store(w http.ResponseWriter, req *http.Request) {
 		entry.Error(err)
 		panic(err)
 	}
-	_, err = c.credhubClient.SetJSON(c.CredhubName(req), values.JSON(dataJson), credhub.Overwrite)
+	_, err = c.credhubClient.SetJSON(c.CredhubName(req), values.JSON(dataJson))
 	if err != nil {
 		entry.Error(err)
 		panic(err)

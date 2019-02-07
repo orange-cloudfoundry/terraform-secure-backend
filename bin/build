@@ -6,5 +6,6 @@ echo -e "\nGenerating Binary for ${GOOS} on arch ${GOARCH}..."
 
 CURRENTDIR=`pwd`
 
-CGO_ENABLED=0 go build -o $CURRENTDIR/out/terraform-secure-backend
+version=$(echo "${TRAVIS_BRANCH:-dev}" | sed 's/^v//')
+CGO_ENABLED=0 go build -ldflags="-s -w -X main.Version=${version}" -o $CURRENTDIR/out/terraform-secure-backend
 echo -e "\nGenerating Binary finished."

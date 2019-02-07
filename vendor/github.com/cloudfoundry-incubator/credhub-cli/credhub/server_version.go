@@ -2,12 +2,18 @@ package credhub
 
 import (
 	"encoding/json"
+	"io"
+	"io/ioutil"
 
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/server"
+	"code.cloudfoundry.org/credhub-cli/credhub/server"
 	"github.com/hashicorp/go-version"
 )
 
 func (ch *CredHub) ServerVersion() (*version.Version, error) {
+	if ch.cachedServerVersion != "" {
+		return version.NewVersion(ch.cachedServerVersion)
+	}
+
 	info, err := ch.Info()
 	if err != nil {
 		return nil, err
@@ -19,6 +25,9 @@ func (ch *CredHub) ServerVersion() (*version.Version, error) {
 			return nil, err
 		}
 	}
+
+	ch.cachedServerVersion = v
+
 	return version.NewVersion(v)
 }
 
@@ -29,6 +38,7 @@ func (ch *CredHub) getVersion() (string, error) {
 	}
 
 	defer response.Body.Close()
+	defer io.Copy(ioutil.Discard, response.Body)
 
 	versionData := &server.VersionData{}
 	decoder := json.NewDecoder(response.Body)

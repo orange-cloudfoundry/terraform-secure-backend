@@ -1,28 +1,29 @@
 language: go
 go:
-- 1.9
+  - "1.11"
 install:
-- go get github.com/onsi/ginkgo/ginkgo
-- go get github.com/onsi/gomega
+  - go get github.com/onsi/ginkgo/ginkgo
+  - go get github.com/onsi/gomega
+  - export GO111MODULE=on
 script:
-- |
-  if [ "$(go fmt ./...)"]; then
-    echo "You need to run `go fmt`"
-    exit 1
-  fi
-- go test ./... -v
+  - |
+    if [ "$(go fmt ./...)"]; then
+      echo "You need to run `go fmt`"
+      exit 1
+    fi
+  - go test ./... -v
 after_success:
-- bin/build-all.sh
+  - bin/build-all.sh
 deploy:
   provider: releases
   api_key:
     secure: ba6Wk+asEhsmvGKDoQUqpr+cifKdE0br0TcucCdFzUmY4l/t8mfLZn9tfd1gqxY2x2bZaqy1JlvtVH+uAlL+Uz5uP9ADI6pgvVAXkW1yBp0XjZzUpmnRKo4oWuGnUTNAGSS5jjDJHvnew6Jdm8+bYF91/sazaUGqQ7sO3FFuDuh+zMvKK2rfnbvkM+VlnfRuGAWQFHN/qt/56tKtoI2umjBl0Yc2C/ZbdTXi9f+eCzq+RNxbzvqScALUeglRwfpZsOv2oxotrObm6sR92rOIVYNqo83mcQq6Sq0cUjTxJrVtDvHa0IdFztr0sR9fFsME6DQRPA+Pa7UMzPNuqeTv+JO4dlQ4YHfk6b+7zKTy0mKinYo0f6ZBXL8iHCzEkXXZL9FnvigHWsi+46rp+1p5m1oVjCpuB5rU1H+uEl61M/JDA6wouyDJd6+8l0aHyR65gZoLkm09rg+H+px8PD2UUd2DzL5x5Vzz+q7fPgUmvboPRcF0KaJtf8AccLJt6AGF2QAVIG5AB3b53M2ERgo6YXwe2CZXFhhknAm0rPy3UeRdiT2dUO/YuE6gL3Fg1/RyxlbRGKtrfSNssJlgy88UH2w2oaYy5oCpvWeBH+NYRBJG8upqUTnC2wYovcVaCMUokX+u9f++pFnGpLNtDokRxNSUUJVcQdBfgtsygiPJGmA=
   file:
-  - out/terraform-secure-backend_darwin_amd64
-  - out/terraform-secure-backend_linux_386
-  - out/terraform-secure-backend_linux_amd64
-  - out/terraform-secure-backend_windows_386.exe
-  - out/terraform-secure-backend_windows_amd64.exe
+    - out/terraform-secure-backend_darwin_amd64
+    - out/terraform-secure-backend_linux_386
+    - out/terraform-secure-backend_linux_amd64
+    - out/terraform-secure-backend_windows_386.exe
+    - out/terraform-secure-backend_windows_amd64.exe
   on:
     tags: true
     all_branches: true

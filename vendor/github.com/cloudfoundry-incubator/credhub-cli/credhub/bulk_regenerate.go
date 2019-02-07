@@ -2,9 +2,11 @@ package credhub
 
 import (
 	"encoding/json"
+	"io"
+	"io/ioutil"
 	"net/http"
 
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials"
+	"code.cloudfoundry.org/credhub-cli/credhub/credentials"
 )
 
 func (ch *CredHub) BulkRegenerate(signedBy string) (credentials.BulkRegenerateResults, error) {
@@ -22,6 +24,7 @@ func (ch *CredHub) BulkRegenerate(signedBy string) (credentials.BulkRegenerateRe
 	}
 
 	defer resp.Body.Close()
+	defer io.Copy(ioutil.Discard, resp.Body)
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&creds)
 

@@ -1,16 +1,42 @@
 package server
 
 import (
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials"
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials/values"
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub"
+	"code.cloudfoundry.org/credhub-cli/credhub/credentials"
+	"code.cloudfoundry.org/credhub-cli/credhub/credentials/values"
 )
 
 type CredhubClient interface {
 	GetLatestJSON(name string) (credentials.JSON, error)
 	Delete(name string) error
-	SetJSON(name string, value values.JSON, overwrite credhub.Mode) (credentials.JSON, error)
+	SetJSON(name string, value values.JSON) (credentials.JSON, error)
 	FindByPath(path string) (credentials.FindResults, error)
-	SetValue(name string, value values.Value, overwrite credhub.Mode) (credentials.Value, error)
+	SetValue(name string, value values.Value) (credentials.Value, error)
 	GetLatestValue(name string) (credentials.Value, error)
+}
+
+type NullCredhubClient struct {
+}
+
+func (NullCredhubClient) GetLatestJSON(name string) (credentials.JSON, error) {
+	return credentials.JSON{}, nil
+}
+
+func (NullCredhubClient) Delete(name string) error {
+	return nil
+}
+
+func (NullCredhubClient) SetJSON(name string, value values.JSON) (credentials.JSON, error) {
+	return credentials.JSON{}, nil
+}
+
+func (NullCredhubClient) FindByPath(path string) (credentials.FindResults, error) {
+	return credentials.FindResults{}, nil
+}
+
+func (NullCredhubClient) SetValue(name string, value values.Value) (credentials.Value, error) {
+	return credentials.Value{}, nil
+}
+
+func (NullCredhubClient) GetLatestValue(name string) (credentials.Value, error) {
+	return credentials.Value{}, nil
 }

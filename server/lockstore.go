@@ -1,10 +1,9 @@
 package server
 
 import (
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials/values"
+	"code.cloudfoundry.org/credhub-cli/credhub/credentials/values"
 	"github.com/hashicorp/terraform/state"
 	"strings"
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub"
 )
 
 type LockStore struct {
@@ -23,7 +22,7 @@ func (s LockStore) toggleLock(name string, info *state.LockInfo, lockState bool)
 	if !lockState {
 		return s.DeleteLock(name)
 	}
-	_, err := s.credhubClient.SetValue(name+LOCK_SUFFIX, values.Value(info.ID), credhub.Overwrite)
+	_, err := s.credhubClient.SetValue(name+LOCK_SUFFIX, values.Value(info.ID))
 	return err
 }
 

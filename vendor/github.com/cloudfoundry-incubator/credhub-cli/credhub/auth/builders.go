@@ -3,7 +3,7 @@ package auth
 import (
 	"net/http"
 
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/auth/uaa"
+	"code.cloudfoundry.org/credhub-cli/credhub/auth/uaa"
 )
 
 // Config provides the CredHub configuration necessary to build an auth Strategy
@@ -50,12 +50,12 @@ func Uaa(clientId, clientSecret, username, password, accessToken, refreshToken s
 		}
 
 		oauth := &OAuthStrategy{
-			Username:     username,
-			Password:     password,
-			ClientId:     clientId,
-			ClientSecret: clientSecret,
-			ApiClient:    httpClient,
-			OAuthClient:  &uaaClient,
+			Username:                username,
+			Password:                password,
+			ClientId:                clientId,
+			ClientSecret:            clientSecret,
+			ApiClient:               httpClient,
+			OAuthClient:             &uaaClient,
 			ClientCredentialRefresh: usingClientCrendentials,
 		}
 

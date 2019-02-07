@@ -3,8 +3,10 @@ package credhub
 import (
 	"encoding/json"
 	"errors"
+	"io"
+	"io/ioutil"
 
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/server"
+	"code.cloudfoundry.org/credhub-cli/credhub/server"
 )
 
 // Info returns the targeted CredHub server information.
@@ -16,6 +18,7 @@ func (ch *CredHub) Info() (*server.Info, error) {
 	}
 
 	defer response.Body.Close()
+	defer io.Copy(ioutil.Discard, response.Body)
 
 	info := &server.Info{}
 	decoder := json.NewDecoder(response.Body)

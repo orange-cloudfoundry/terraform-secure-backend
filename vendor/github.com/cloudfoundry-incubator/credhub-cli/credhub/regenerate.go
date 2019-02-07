@@ -2,9 +2,11 @@ package credhub
 
 import (
 	"encoding/json"
+	"io"
+	"io/ioutil"
 	"net/http"
 
-	"github.com/cloudfoundry-incubator/credhub-cli/credhub/credentials"
+	"code.cloudfoundry.org/credhub-cli/credhub/credentials"
 )
 
 // Regenerate generates and returns a new credential version using the same parameters existing credential. The returned credential may be of any type.
@@ -24,6 +26,7 @@ func (ch *CredHub) Regenerate(name string) (credentials.Credential, error) {
 	}
 
 	defer resp.Body.Close()
+	defer io.Copy(ioutil.Discard, resp.Body)
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&cred)
 

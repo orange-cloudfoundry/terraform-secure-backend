@@ -7,7 +7,7 @@ import (
 	"github.com/cloudfoundry-community/gautocloud/loader"
 )
 
-var defaultLoader loader.Loader = loader.NewFacadeLoader(
+var defaultLoader loader.Loader = loader.NewLoader(
 	[]cloudenv.CloudEnv{
 		cloudenv.NewCfCloudEnv(),
 		cloudenv.NewHerokuCloudEnv(),

@@ -155,12 +155,12 @@ func (_mr *_MockLoaderRecorder) ReloadConnectors() *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "ReloadConnectors")
 }
 
-func (_m *MockLoader) ShowPreviousLog() {
-	_m.ctrl.Call(_m, "ShowPreviousLog")
+func (_m *MockLoader) Reload() {
+	_m.ctrl.Call(_m, "Reload")
 }
 
-func (_mr *_MockLoaderRecorder) ShowPreviousLog() *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "ShowPreviousLog")
+func (_mr *_MockLoaderRecorder) Reload() *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Reload")
 }
 
 func (_m *MockLoader) Store() map[string][]loader.StoredService {

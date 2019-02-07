@@ -3,14 +3,22 @@
 package s3
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/awsutil"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/private/protocol"
+	"github.com/aws/aws-sdk-go/private/protocol/eventstream"
+	"github.com/aws/aws-sdk-go/private/protocol/eventstream/eventstreamapi"
+	"github.com/aws/aws-sdk-go/private/protocol/rest"
 	"github.com/aws/aws-sdk-go/private/protocol/restxml"
 )
 
@@ -18,8 +26,8 @@ const opAbortMultipartUpload = "AbortMultipartUpload"
 
 // AbortMultipartUploadRequest generates a "aws/request.Request" representing the
 // client's request for the AbortMultipartUpload operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -101,8 +109,8 @@ const opCompleteMultipartUpload = "CompleteMultipartUpload"
 
 // CompleteMultipartUploadRequest generates a "aws/request.Request" representing the
 // client's request for the CompleteMultipartUpload operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -175,8 +183,8 @@ const opCopyObject = "CopyObject"
 
 // CopyObjectRequest generates a "aws/request.Request" representing the
 // client's request for the CopyObject operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -255,8 +263,8 @@ const opCreateBucket = "CreateBucket"
 
 // CreateBucketRequest generates a "aws/request.Request" representing the
 // client's request for the CreateBucket operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -337,8 +345,8 @@ const opCreateMultipartUpload = "CreateMultipartUpload"
 
 // CreateMultipartUploadRequest generates a "aws/request.Request" representing the
 // client's request for the CreateMultipartUpload operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -417,8 +425,8 @@ const opDeleteBucket = "DeleteBucket"
 
 // DeleteBucketRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucket operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -494,8 +502,8 @@ const opDeleteBucketAnalyticsConfiguration = "DeleteBucketAnalyticsConfiguration
 
 // DeleteBucketAnalyticsConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketAnalyticsConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -571,8 +579,8 @@ const opDeleteBucketCors = "DeleteBucketCors"
 
 // DeleteBucketCorsRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketCors operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -613,7 +621,7 @@ func (c *S3) DeleteBucketCorsRequest(input *DeleteBucketCorsInput) (req *request
 
 // DeleteBucketCors API operation for Amazon Simple Storage Service.
 //
-// Deletes the cors configuration information set for the bucket.
+// Deletes the CORS configuration information set for the bucket.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -647,8 +655,8 @@ const opDeleteBucketEncryption = "DeleteBucketEncryption"
 
 // DeleteBucketEncryptionRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketEncryption operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -723,8 +731,8 @@ const opDeleteBucketInventoryConfiguration = "DeleteBucketInventoryConfiguration
 
 // DeleteBucketInventoryConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketInventoryConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -800,8 +808,8 @@ const opDeleteBucketLifecycle = "DeleteBucketLifecycle"
 
 // DeleteBucketLifecycleRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketLifecycle operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -876,8 +884,8 @@ const opDeleteBucketMetricsConfiguration = "DeleteBucketMetricsConfiguration"
 
 // DeleteBucketMetricsConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketMetricsConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -953,8 +961,8 @@ const opDeleteBucketPolicy = "DeleteBucketPolicy"
 
 // DeleteBucketPolicyRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketPolicy operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1029,8 +1037,8 @@ const opDeleteBucketReplication = "DeleteBucketReplication"
 
 // DeleteBucketReplicationRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketReplication operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1071,7 +1079,9 @@ func (c *S3) DeleteBucketReplicationRequest(input *DeleteBucketReplicationInput)
 
 // DeleteBucketReplication API operation for Amazon Simple Storage Service.
 //
-// Deletes the replication configuration from the bucket.
+// Deletes the replication configuration from the bucket. For information about
+// replication configuration, see Cross-Region Replication (CRR) ( https://docs.aws.amazon.com/AmazonS3/latest/dev/crr.html)
+// in the Amazon S3 Developer Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1105,8 +1115,8 @@ const opDeleteBucketTagging = "DeleteBucketTagging"
 
 // DeleteBucketTaggingRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketTagging operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1181,8 +1191,8 @@ const opDeleteBucketWebsite = "DeleteBucketWebsite"
 
 // DeleteBucketWebsiteRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBucketWebsite operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1257,8 +1267,8 @@ const opDeleteObject = "DeleteObject"
 
 // DeleteObjectRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteObject operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1333,8 +1343,8 @@ const opDeleteObjectTagging = "DeleteObjectTagging"
 
 // DeleteObjectTaggingRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteObjectTagging operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1407,8 +1417,8 @@ const opDeleteObjects = "DeleteObjects"
 
 // DeleteObjectsRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteObjects operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1478,12 +1488,88 @@ func (c *S3) DeleteObjectsWithContext(ctx aws.Context, input *DeleteObjectsInput
 	return out, req.Send()
 }
 
+const opDeletePublicAccessBlock = "DeletePublicAccessBlock"
+
+// DeletePublicAccessBlockRequest generates a "aws/request.Request" representing the
+// client's request for the DeletePublicAccessBlock operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfully.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See DeletePublicAccessBlock for more information on using the DeletePublicAccessBlock
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//
+//    // Example sending a request using the DeletePublicAccessBlockRequest method.
+//    req, resp := client.DeletePublicAccessBlockRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/DeletePublicAccessBlock
+func (c *S3) DeletePublicAccessBlockRequest(input *DeletePublicAccessBlockInput) (req *request.Request, output *DeletePublicAccessBlockOutput) {
+	op := &request.Operation{
+		Name:       opDeletePublicAccessBlock,
+		HTTPMethod: "DELETE",
+		HTTPPath:   "/{Bucket}?publicAccessBlock",
+	}
+
+	if input == nil {
+		input = &DeletePublicAccessBlockInput{}
+	}
+
+	output = &DeletePublicAccessBlockOutput{}
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	return
+}
+
+// DeletePublicAccessBlock API operation for Amazon Simple Storage Service.
+//
+// Removes the Public Access Block configuration for an Amazon S3 bucket.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon Simple Storage Service's
+// API operation DeletePublicAccessBlock for usage and error information.
+// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/DeletePublicAccessBlock
+func (c *S3) DeletePublicAccessBlock(input *DeletePublicAccessBlockInput) (*DeletePublicAccessBlockOutput, error) {
+	req, out := c.DeletePublicAccessBlockRequest(input)
+	return out, req.Send()
+}
+
+// DeletePublicAccessBlockWithContext is the same as DeletePublicAccessBlock with the addition of
+// the ability to pass a context and additional request options.
+//
+// See DeletePublicAccessBlock for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *S3) DeletePublicAccessBlockWithContext(ctx aws.Context, input *DeletePublicAccessBlockInput, opts ...request.Option) (*DeletePublicAccessBlockOutput, error) {
+	req, out := c.DeletePublicAccessBlockRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
 const opGetBucketAccelerateConfiguration = "GetBucketAccelerateConfiguration"
 
 // GetBucketAccelerateConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketAccelerateConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1556,8 +1642,8 @@ const opGetBucketAcl = "GetBucketAcl"
 
 // GetBucketAclRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketAcl operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1630,8 +1716,8 @@ const opGetBucketAnalyticsConfiguration = "GetBucketAnalyticsConfiguration"
 
 // GetBucketAnalyticsConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketAnalyticsConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1705,8 +1791,8 @@ const opGetBucketCors = "GetBucketCors"
 
 // GetBucketCorsRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketCors operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1745,7 +1831,7 @@ func (c *S3) GetBucketCorsRequest(input *GetBucketCorsInput) (req *request.Reque
 
 // GetBucketCors API operation for Amazon Simple Storage Service.
 //
-// Returns the cors configuration for the bucket.
+// Returns the CORS configuration for the bucket.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1779,8 +1865,8 @@ const opGetBucketEncryption = "GetBucketEncryption"
 
 // GetBucketEncryptionRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketEncryption operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1853,8 +1939,8 @@ const opGetBucketInventoryConfiguration = "GetBucketInventoryConfiguration"
 
 // GetBucketInventoryConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketInventoryConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1928,8 +2014,8 @@ const opGetBucketLifecycle = "GetBucketLifecycle"
 
 // GetBucketLifecycleRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketLifecycle operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -1950,6 +2036,8 @@ const opGetBucketLifecycle = "GetBucketLifecycle"
 //    }
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetBucketLifecycle
+//
+// Deprecated: GetBucketLifecycle has been deprecated
 func (c *S3) GetBucketLifecycleRequest(input *GetBucketLifecycleInput) (req *request.Request, output *GetBucketLifecycleOutput) {
 	if c.Client.Config.Logger != nil {
 		c.Client.Config.Logger.Log("This operation, GetBucketLifecycle, has been deprecated")
@@ -1980,6 +2068,8 @@ func (c *S3) GetBucketLifecycleRequest(input *GetBucketLifecycleInput) (req *req
 // See the AWS API reference guide for Amazon Simple Storage Service's
 // API operation GetBucketLifecycle for usage and error information.
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetBucketLifecycle
+//
+// Deprecated: GetBucketLifecycle has been deprecated
 func (c *S3) GetBucketLifecycle(input *GetBucketLifecycleInput) (*GetBucketLifecycleOutput, error) {
 	req, out := c.GetBucketLifecycleRequest(input)
 	return out, req.Send()
@@ -1994,6 +2084,8 @@ func (c *S3) GetBucketLifecycle(input *GetBucketLifecycleInput) (*GetBucketLifec
 // the context is nil a panic will occur. In the future the SDK may create
 // sub-contexts for http.Requests. See https://golang.org/pkg/context/
 // for more information on using Contexts.
+//
+// Deprecated: GetBucketLifecycleWithContext has been deprecated
 func (c *S3) GetBucketLifecycleWithContext(ctx aws.Context, input *GetBucketLifecycleInput, opts ...request.Option) (*GetBucketLifecycleOutput, error) {
 	req, out := c.GetBucketLifecycleRequest(input)
 	req.SetContext(ctx)
@@ -2005,8 +2097,8 @@ const opGetBucketLifecycleConfiguration = "GetBucketLifecycleConfiguration"
 
 // GetBucketLifecycleConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketLifecycleConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2079,8 +2171,8 @@ const opGetBucketLocation = "GetBucketLocation"
 
 // GetBucketLocationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketLocation operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2153,8 +2245,8 @@ const opGetBucketLogging = "GetBucketLogging"
 
 // GetBucketLoggingRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketLogging operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2228,8 +2320,8 @@ const opGetBucketMetricsConfiguration = "GetBucketMetricsConfiguration"
 
 // GetBucketMetricsConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketMetricsConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2303,8 +2395,8 @@ const opGetBucketNotification = "GetBucketNotification"
 
 // GetBucketNotificationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketNotification operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2325,6 +2417,8 @@ const opGetBucketNotification = "GetBucketNotification"
 //    }
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetBucketNotification
+//
+// Deprecated: GetBucketNotification has been deprecated
 func (c *S3) GetBucketNotificationRequest(input *GetBucketNotificationConfigurationRequest) (req *request.Request, output *NotificationConfigurationDeprecated) {
 	if c.Client.Config.Logger != nil {
 		c.Client.Config.Logger.Log("This operation, GetBucketNotification, has been deprecated")
@@ -2355,6 +2449,8 @@ func (c *S3) GetBucketNotificationRequest(input *GetBucketNotificationConfigurat
 // See the AWS API reference guide for Amazon Simple Storage Service's
 // API operation GetBucketNotification for usage and error information.
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetBucketNotification
+//
+// Deprecated: GetBucketNotification has been deprecated
 func (c *S3) GetBucketNotification(input *GetBucketNotificationConfigurationRequest) (*NotificationConfigurationDeprecated, error) {
 	req, out := c.GetBucketNotificationRequest(input)
 	return out, req.Send()
@@ -2369,6 +2465,8 @@ func (c *S3) GetBucketNotification(input *GetBucketNotificationConfigurationRequ
 // the context is nil a panic will occur. In the future the SDK may create
 // sub-contexts for http.Requests. See https://golang.org/pkg/context/
 // for more information on using Contexts.
+//
+// Deprecated: GetBucketNotificationWithContext has been deprecated
 func (c *S3) GetBucketNotificationWithContext(ctx aws.Context, input *GetBucketNotificationConfigurationRequest, opts ...request.Option) (*NotificationConfigurationDeprecated, error) {
 	req, out := c.GetBucketNotificationRequest(input)
 	req.SetContext(ctx)
@@ -2380,8 +2478,8 @@ const opGetBucketNotificationConfiguration = "GetBucketNotificationConfiguration
 
 // GetBucketNotificationConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketNotificationConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2454,8 +2552,8 @@ const opGetBucketPolicy = "GetBucketPolicy"
 
 // GetBucketPolicyRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketPolicy operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2524,12 +2622,87 @@ func (c *S3) GetBucketPolicyWithContext(ctx aws.Context, input *GetBucketPolicyI
 	return out, req.Send()
 }
 
+const opGetBucketPolicyStatus = "GetBucketPolicyStatus"
+
+// GetBucketPolicyStatusRequest generates a "aws/request.Request" representing the
+// client's request for the GetBucketPolicyStatus operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfully.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See GetBucketPolicyStatus for more information on using the GetBucketPolicyStatus
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//
+//    // Example sending a request using the GetBucketPolicyStatusRequest method.
+//    req, resp := client.GetBucketPolicyStatusRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetBucketPolicyStatus
+func (c *S3) GetBucketPolicyStatusRequest(input *GetBucketPolicyStatusInput) (req *request.Request, output *GetBucketPolicyStatusOutput) {
+	op := &request.Operation{
+		Name:       opGetBucketPolicyStatus,
+		HTTPMethod: "GET",
+		HTTPPath:   "/{Bucket}?policyStatus",
+	}
+
+	if input == nil {
+		input = &GetBucketPolicyStatusInput{}
+	}
+
+	output = &GetBucketPolicyStatusOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// GetBucketPolicyStatus API operation for Amazon Simple Storage Service.
+//
+// Retrieves the policy status for an Amazon S3 bucket, indicating whether the
+// bucket is public.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon Simple Storage Service's
+// API operation GetBucketPolicyStatus for usage and error information.
+// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetBucketPolicyStatus
+func (c *S3) GetBucketPolicyStatus(input *GetBucketPolicyStatusInput) (*GetBucketPolicyStatusOutput, error) {
+	req, out := c.GetBucketPolicyStatusRequest(input)
+	return out, req.Send()
+}
+
+// GetBucketPolicyStatusWithContext is the same as GetBucketPolicyStatus with the addition of
+// the ability to pass a context and additional request options.
+//
+// See GetBucketPolicyStatus for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *S3) GetBucketPolicyStatusWithContext(ctx aws.Context, input *GetBucketPolicyStatusInput, opts ...request.Option) (*GetBucketPolicyStatusOutput, error) {
+	req, out := c.GetBucketPolicyStatusRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
 const opGetBucketReplication = "GetBucketReplication"
 
 // GetBucketReplicationRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketReplication operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2570,6 +2743,10 @@ func (c *S3) GetBucketReplicationRequest(input *GetBucketReplicationInput) (req 
 //
 // Returns the replication configuration of a bucket.
 //
+// It can take a while to propagate the put or delete a replication configuration
+// to all Amazon S3 systems. Therefore, a get request soon after put or delete
+// can return a wrong result.
+//
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
 // the error.
@@ -2602,8 +2779,8 @@ const opGetBucketRequestPayment = "GetBucketRequestPayment"
 
 // GetBucketRequestPaymentRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketRequestPayment operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2676,8 +2853,8 @@ const opGetBucketTagging = "GetBucketTagging"
 
 // GetBucketTaggingRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketTagging operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2750,8 +2927,8 @@ const opGetBucketVersioning = "GetBucketVersioning"
 
 // GetBucketVersioningRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketVersioning operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2824,8 +3001,8 @@ const opGetBucketWebsite = "GetBucketWebsite"
 
 // GetBucketWebsiteRequest generates a "aws/request.Request" representing the
 // client's request for the GetBucketWebsite operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2898,8 +3075,8 @@ const opGetObject = "GetObject"
 
 // GetObjectRequest generates a "aws/request.Request" representing the
 // client's request for the GetObject operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -2977,8 +3154,8 @@ const opGetObjectAcl = "GetObjectAcl"
 
 // GetObjectAclRequest generates a "aws/request.Request" representing the
 // client's request for the GetObjectAcl operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3056,8 +3233,8 @@ const opGetObjectTagging = "GetObjectTagging"
 
 // GetObjectTaggingRequest generates a "aws/request.Request" representing the
 // client's request for the GetObjectTagging operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3130,8 +3307,8 @@ const opGetObjectTorrent = "GetObjectTorrent"
 
 // GetObjectTorrentRequest generates a "aws/request.Request" representing the
 // client's request for the GetObjectTorrent operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3200,12 +3377,86 @@ func (c *S3) GetObjectTorrentWithContext(ctx aws.Context, input *GetObjectTorren
 	return out, req.Send()
 }
 
+const opGetPublicAccessBlock = "GetPublicAccessBlock"
+
+// GetPublicAccessBlockRequest generates a "aws/request.Request" representing the
+// client's request for the GetPublicAccessBlock operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfully.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See GetPublicAccessBlock for more information on using the GetPublicAccessBlock
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//
+//    // Example sending a request using the GetPublicAccessBlockRequest method.
+//    req, resp := client.GetPublicAccessBlockRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetPublicAccessBlock
+func (c *S3) GetPublicAccessBlockRequest(input *GetPublicAccessBlockInput) (req *request.Request, output *GetPublicAccessBlockOutput) {
+	op := &request.Operation{
+		Name:       opGetPublicAccessBlock,
+		HTTPMethod: "GET",
+		HTTPPath:   "/{Bucket}?publicAccessBlock",
+	}
+
+	if input == nil {
+		input = &GetPublicAccessBlockInput{}
+	}
+
+	output = &GetPublicAccessBlockOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// GetPublicAccessBlock API operation for Amazon Simple Storage Service.
+//
+// Retrieves the Public Access Block configuration for an Amazon S3 bucket.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon Simple Storage Service's
+// API operation GetPublicAccessBlock for usage and error information.
+// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/GetPublicAccessBlock
+func (c *S3) GetPublicAccessBlock(input *GetPublicAccessBlockInput) (*GetPublicAccessBlockOutput, error) {
+	req, out := c.GetPublicAccessBlockRequest(input)
+	return out, req.Send()
+}
+
+// GetPublicAccessBlockWithContext is the same as GetPublicAccessBlock with the addition of
+// the ability to pass a context and additional request options.
+//
+// See GetPublicAccessBlock for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *S3) GetPublicAccessBlockWithContext(ctx aws.Context, input *GetPublicAccessBlockInput, opts ...request.Option) (*GetPublicAccessBlockOutput, error) {
+	req, out := c.GetPublicAccessBlockRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
 const opHeadBucket = "HeadBucket"
 
 // HeadBucketRequest generates a "aws/request.Request" representing the
 // client's request for the HeadBucket operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3286,8 +3537,8 @@ const opHeadObject = "HeadObject"
 
 // HeadObjectRequest generates a "aws/request.Request" representing the
 // client's request for the HeadObject operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3365,8 +3616,8 @@ const opListBucketAnalyticsConfigurations = "ListBucketAnalyticsConfigurations"
 
 // ListBucketAnalyticsConfigurationsRequest generates a "aws/request.Request" representing the
 // client's request for the ListBucketAnalyticsConfigurations operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3439,8 +3690,8 @@ const opListBucketInventoryConfigurations = "ListBucketInventoryConfigurations"
 
 // ListBucketInventoryConfigurationsRequest generates a "aws/request.Request" representing the
 // client's request for the ListBucketInventoryConfigurations operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3513,8 +3764,8 @@ const opListBucketMetricsConfigurations = "ListBucketMetricsConfigurations"
 
 // ListBucketMetricsConfigurationsRequest generates a "aws/request.Request" representing the
 // client's request for the ListBucketMetricsConfigurations operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3587,8 +3838,8 @@ const opListBuckets = "ListBuckets"
 
 // ListBucketsRequest generates a "aws/request.Request" representing the
 // client's request for the ListBuckets operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3661,8 +3912,8 @@ const opListMultipartUploads = "ListMultipartUploads"
 
 // ListMultipartUploadsRequest generates a "aws/request.Request" representing the
 // client's request for the ListMultipartUploads operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3791,8 +4042,8 @@ const opListObjectVersions = "ListObjectVersions"
 
 // ListObjectVersionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListObjectVersions operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -3921,8 +4172,8 @@ const opListObjects = "ListObjects"
 
 // ListObjectsRequest generates a "aws/request.Request" representing the
 // client's request for the ListObjects operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4058,8 +4309,8 @@ const opListObjectsV2 = "ListObjectsV2"
 
 // ListObjectsV2Request generates a "aws/request.Request" representing the
 // client's request for the ListObjectsV2 operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4196,8 +4447,8 @@ const opListParts = "ListParts"
 
 // ListPartsRequest generates a "aws/request.Request" representing the
 // client's request for the ListParts operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4326,8 +4577,8 @@ const opPutBucketAccelerateConfiguration = "PutBucketAccelerateConfiguration"
 
 // PutBucketAccelerateConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketAccelerateConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4402,8 +4653,8 @@ const opPutBucketAcl = "PutBucketAcl"
 
 // PutBucketAclRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketAcl operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4478,8 +4729,8 @@ const opPutBucketAnalyticsConfiguration = "PutBucketAnalyticsConfiguration"
 
 // PutBucketAnalyticsConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketAnalyticsConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4555,8 +4806,8 @@ const opPutBucketCors = "PutBucketCors"
 
 // PutBucketCorsRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketCors operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4597,7 +4848,7 @@ func (c *S3) PutBucketCorsRequest(input *PutBucketCorsInput) (req *request.Reque
 
 // PutBucketCors API operation for Amazon Simple Storage Service.
 //
-// Sets the cors configuration for a bucket.
+// Sets the CORS configuration for a bucket.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -4631,8 +4882,8 @@ const opPutBucketEncryption = "PutBucketEncryption"
 
 // PutBucketEncryptionRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketEncryption operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4708,8 +4959,8 @@ const opPutBucketInventoryConfiguration = "PutBucketInventoryConfiguration"
 
 // PutBucketInventoryConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketInventoryConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4785,8 +5036,8 @@ const opPutBucketLifecycle = "PutBucketLifecycle"
 
 // PutBucketLifecycleRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketLifecycle operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4807,6 +5058,8 @@ const opPutBucketLifecycle = "PutBucketLifecycle"
 //    }
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutBucketLifecycle
+//
+// Deprecated: PutBucketLifecycle has been deprecated
 func (c *S3) PutBucketLifecycleRequest(input *PutBucketLifecycleInput) (req *request.Request, output *PutBucketLifecycleOutput) {
 	if c.Client.Config.Logger != nil {
 		c.Client.Config.Logger.Log("This operation, PutBucketLifecycle, has been deprecated")
@@ -4839,6 +5092,8 @@ func (c *S3) PutBucketLifecycleRequest(input *PutBucketLifecycleInput) (req *req
 // See the AWS API reference guide for Amazon Simple Storage Service's
 // API operation PutBucketLifecycle for usage and error information.
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutBucketLifecycle
+//
+// Deprecated: PutBucketLifecycle has been deprecated
 func (c *S3) PutBucketLifecycle(input *PutBucketLifecycleInput) (*PutBucketLifecycleOutput, error) {
 	req, out := c.PutBucketLifecycleRequest(input)
 	return out, req.Send()
@@ -4853,6 +5108,8 @@ func (c *S3) PutBucketLifecycle(input *PutBucketLifecycleInput) (*PutBucketLifec
 // the context is nil a panic will occur. In the future the SDK may create
 // sub-contexts for http.Requests. See https://golang.org/pkg/context/
 // for more information on using Contexts.
+//
+// Deprecated: PutBucketLifecycleWithContext has been deprecated
 func (c *S3) PutBucketLifecycleWithContext(ctx aws.Context, input *PutBucketLifecycleInput, opts ...request.Option) (*PutBucketLifecycleOutput, error) {
 	req, out := c.PutBucketLifecycleRequest(input)
 	req.SetContext(ctx)
@@ -4864,8 +5121,8 @@ const opPutBucketLifecycleConfiguration = "PutBucketLifecycleConfiguration"
 
 // PutBucketLifecycleConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketLifecycleConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -4941,8 +5198,8 @@ const opPutBucketLogging = "PutBucketLogging"
 
 // PutBucketLoggingRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketLogging operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5019,8 +5276,8 @@ const opPutBucketMetricsConfiguration = "PutBucketMetricsConfiguration"
 
 // PutBucketMetricsConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketMetricsConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5096,8 +5353,8 @@ const opPutBucketNotification = "PutBucketNotification"
 
 // PutBucketNotificationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketNotification operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5118,6 +5375,8 @@ const opPutBucketNotification = "PutBucketNotification"
 //    }
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutBucketNotification
+//
+// Deprecated: PutBucketNotification has been deprecated
 func (c *S3) PutBucketNotificationRequest(input *PutBucketNotificationInput) (req *request.Request, output *PutBucketNotificationOutput) {
 	if c.Client.Config.Logger != nil {
 		c.Client.Config.Logger.Log("This operation, PutBucketNotification, has been deprecated")
@@ -5150,6 +5409,8 @@ func (c *S3) PutBucketNotificationRequest(input *PutBucketNotificationInput) (re
 // See the AWS API reference guide for Amazon Simple Storage Service's
 // API operation PutBucketNotification for usage and error information.
 // See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutBucketNotification
+//
+// Deprecated: PutBucketNotification has been deprecated
 func (c *S3) PutBucketNotification(input *PutBucketNotificationInput) (*PutBucketNotificationOutput, error) {
 	req, out := c.PutBucketNotificationRequest(input)
 	return out, req.Send()
@@ -5164,6 +5425,8 @@ func (c *S3) PutBucketNotification(input *PutBucketNotificationInput) (*PutBucke
 // the context is nil a panic will occur. In the future the SDK may create
 // sub-contexts for http.Requests. See https://golang.org/pkg/context/
 // for more information on using Contexts.
+//
+// Deprecated: PutBucketNotificationWithContext has been deprecated
 func (c *S3) PutBucketNotificationWithContext(ctx aws.Context, input *PutBucketNotificationInput, opts ...request.Option) (*PutBucketNotificationOutput, error) {
 	req, out := c.PutBucketNotificationRequest(input)
 	req.SetContext(ctx)
@@ -5175,8 +5438,8 @@ const opPutBucketNotificationConfiguration = "PutBucketNotificationConfiguration
 
 // PutBucketNotificationConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketNotificationConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5251,8 +5514,8 @@ const opPutBucketPolicy = "PutBucketPolicy"
 
 // PutBucketPolicyRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketPolicy operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5328,8 +5591,8 @@ const opPutBucketReplication = "PutBucketReplication"
 
 // PutBucketReplicationRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketReplication operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5370,8 +5633,9 @@ func (c *S3) PutBucketReplicationRequest(input *PutBucketReplicationInput) (req 
 
 // PutBucketReplication API operation for Amazon Simple Storage Service.
 //
-// Creates a new replication configuration (or replaces an existing one, if
-// present).
+// Creates a replication configuration or replaces an existing one. For more
+// information, see Cross-Region Replication (CRR) ( https://docs.aws.amazon.com/AmazonS3/latest/dev/crr.html)
+// in the Amazon S3 Developer Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -5405,8 +5669,8 @@ const opPutBucketRequestPayment = "PutBucketRequestPayment"
 
 // PutBucketRequestPaymentRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketRequestPayment operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5485,8 +5749,8 @@ const opPutBucketTagging = "PutBucketTagging"
 
 // PutBucketTaggingRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketTagging operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5561,8 +5825,8 @@ const opPutBucketVersioning = "PutBucketVersioning"
 
 // PutBucketVersioningRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketVersioning operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5638,8 +5902,8 @@ const opPutBucketWebsite = "PutBucketWebsite"
 
 // PutBucketWebsiteRequest generates a "aws/request.Request" representing the
 // client's request for the PutBucketWebsite operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5714,8 +5978,8 @@ const opPutObject = "PutObject"
 
 // PutObjectRequest generates a "aws/request.Request" representing the
 // client's request for the PutObject operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5788,8 +6052,8 @@ const opPutObjectAcl = "PutObjectAcl"
 
 // PutObjectAclRequest generates a "aws/request.Request" representing the
 // client's request for the PutObjectAcl operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5868,8 +6132,8 @@ const opPutObjectTagging = "PutObjectTagging"
 
 // PutObjectTaggingRequest generates a "aws/request.Request" representing the
 // client's request for the PutObjectTagging operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -5938,12 +6202,89 @@ func (c *S3) PutObjectTaggingWithContext(ctx aws.Context, input *PutObjectTaggin
 	return out, req.Send()
 }
 
+const opPutPublicAccessBlock = "PutPublicAccessBlock"
+
+// PutPublicAccessBlockRequest generates a "aws/request.Request" representing the
+// client's request for the PutPublicAccessBlock operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfully.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See PutPublicAccessBlock for more information on using the PutPublicAccessBlock
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//
+//    // Example sending a request using the PutPublicAccessBlockRequest method.
+//    req, resp := client.PutPublicAccessBlockRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutPublicAccessBlock
+func (c *S3) PutPublicAccessBlockRequest(input *PutPublicAccessBlockInput) (req *request.Request, output *PutPublicAccessBlockOutput) {
+	op := &request.Operation{
+		Name:       opPutPublicAccessBlock,
+		HTTPMethod: "PUT",
+		HTTPPath:   "/{Bucket}?publicAccessBlock",
+	}
+
+	if input == nil {
+		input = &PutPublicAccessBlockInput{}
+	}
+
+	output = &PutPublicAccessBlockOutput{}
+	req = c.newRequest(op, input, output)
+	req.Handlers.Unmarshal.Remove(restxml.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBackNamed(protocol.UnmarshalDiscardBodyHandler)
+	return
+}
+
+// PutPublicAccessBlock API operation for Amazon Simple Storage Service.
+//
+// Creates or modifies the Public Access Block configuration for an Amazon S3
+// bucket.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon Simple Storage Service's
+// API operation PutPublicAccessBlock for usage and error information.
+// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/PutPublicAccessBlock
+func (c *S3) PutPublicAccessBlock(input *PutPublicAccessBlockInput) (*PutPublicAccessBlockOutput, error) {
+	req, out := c.PutPublicAccessBlockRequest(input)
+	return out, req.Send()
+}
+
+// PutPublicAccessBlockWithContext is the same as PutPublicAccessBlock with the addition of
+// the ability to pass a context and additional request options.
+//
+// See PutPublicAccessBlock for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *S3) PutPublicAccessBlockWithContext(ctx aws.Context, input *PutPublicAccessBlockInput, opts ...request.Option) (*PutPublicAccessBlockOutput, error) {
+	req, out := c.PutPublicAccessBlockRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
 const opRestoreObject = "RestoreObject"
 
 // RestoreObjectRequest generates a "aws/request.Request" representing the
 // client's request for the RestoreObject operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -6017,12 +6358,94 @@ func (c *S3) RestoreObjectWithContext(ctx aws.Context, input *RestoreObjectInput
 	return out, req.Send()
 }
 
+const opSelectObjectContent = "SelectObjectContent"
+
+// SelectObjectContentRequest generates a "aws/request.Request" representing the
+// client's request for the SelectObjectContent operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfully.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See SelectObjectContent for more information on using the SelectObjectContent
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//
+//    // Example sending a request using the SelectObjectContentRequest method.
+//    req, resp := client.SelectObjectContentRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/SelectObjectContent
+func (c *S3) SelectObjectContentRequest(input *SelectObjectContentInput) (req *request.Request, output *SelectObjectContentOutput) {
+	op := &request.Operation{
+		Name:       opSelectObjectContent,
+		HTTPMethod: "POST",
+		HTTPPath:   "/{Bucket}/{Key+}?select&select-type=2",
+	}
+
+	if input == nil {
+		input = &SelectObjectContentInput{}
+	}
+
+	output = &SelectObjectContentOutput{}
+	req = c.newRequest(op, input, output)
+	req.Handlers.Send.Swap(client.LogHTTPResponseHandler.Name, client.LogHTTPResponseHeaderHandler)
+	req.Handlers.Unmarshal.Swap(restxml.UnmarshalHandler.Name, rest.UnmarshalHandler)
+	req.Handlers.Unmarshal.PushBack(output.runEventStreamLoop)
+	return
+}
+
+// SelectObjectContent API operation for Amazon Simple Storage Service.
+//
+// This operation filters the contents of an Amazon S3 object based on a simple
+// Structured Query Language (SQL) statement. In the request, along with the
+// SQL expression, you must also specify a data serialization format (JSON or
+// CSV) of the object. Amazon S3 uses this to parse object data into records,
+// and returns only records that match the specified SQL expression. You must
+// also specify the data serialization format for the response.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon Simple Storage Service's
+// API operation SelectObjectContent for usage and error information.
+// See also, https://docs.aws.amazon.com/goto/WebAPI/s3-2006-03-01/SelectObjectContent
+func (c *S3) SelectObjectContent(input *SelectObjectContentInput) (*SelectObjectContentOutput, error) {
+	req, out := c.SelectObjectContentRequest(input)
+	return out, req.Send()
+}
+
+// SelectObjectContentWithContext is the same as SelectObjectContent with the addition of
+// the ability to pass a context and additional request options.
+//
+// See SelectObjectContent for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *S3) SelectObjectContentWithContext(ctx aws.Context, input *SelectObjectContentInput, opts ...request.Option) (*SelectObjectContentOutput, error) {
+	req, out := c.SelectObjectContentRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
 const opUploadPart = "UploadPart"
 
 // UploadPartRequest generates a "aws/request.Request" representing the
 // client's request for the UploadPart operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -6101,8 +6524,8 @@ const opUploadPartCopy = "UploadPartCopy"
 
 // UploadPartCopyRequest generates a "aws/request.Request" representing the
 // client's request for the UploadPartCopy operation. The "output" return
-// value will be populated with the request's response once the request complets
-// successfuly.
+// value will be populated with the request's response once the request completes
+// successfully.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
 // the "output" return value is not valid until after Send returns without error.
@@ -6377,7 +6800,7 @@ func (s *AccessControlPolicy) SetOwner(v *Owner) *AccessControlPolicy {
 	return s
 }
 
-// Container for information regarding the access control for replicas.
+// A container for information about access control for replicas.
 type AccessControlTranslation struct {
 	_ struct{} `type:"structure"`
 
@@ -6730,7 +7153,7 @@ type Bucket struct {
 	_ struct{} `type:"structure"`
 
 	// Date the bucket was created.
-	CreationDate *time.Time `type:"timestamp" timestampFormat:"iso8601"`
+	CreationDate *time.Time `type:"timestamp"`
 
 	// The name of the bucket.
 	Name *string `type:"string"`
@@ -6807,6 +7230,9 @@ func (s *BucketLifecycleConfiguration) SetRules(v []*LifecycleRule) *BucketLifec
 type BucketLoggingStatus struct {
 	_ struct{} `type:"structure"`
 
+	// Container for logging information. Presence of this element indicates that
+	// logging is enabled. Parameters TargetBucket and TargetPrefix are required
+	// in this case.
 	LoggingEnabled *LoggingEnabled `type:"structure"`
 }
 
@@ -6974,11 +7400,16 @@ func (s *CORSRule) SetMaxAgeSeconds(v int64) *CORSRule {
 type CSVInput struct {
 	_ struct{} `type:"structure"`
 
-	// Single character used to indicate a row should be ignored when present at
-	// the start of a row.
+	// Specifies that CSV field values may contain quoted record delimiters and
+	// such records should be allowed. Default value is FALSE. Setting this value
+	// to TRUE may lower performance.
+	AllowQuotedRecordDelimiter *bool `type:"boolean"`
+
+	// The single character used to indicate a row should be ignored when present
+	// at the start of a row.
 	Comments *string `type:"string"`
 
-	// Value used to separate individual fields in a record.
+	// The value used to separate individual fields in a record.
 	FieldDelimiter *string `type:"string"`
 
 	// Describes the first line of input. Valid values: None, Ignore, Use.
@@ -6987,11 +7418,11 @@ type CSVInput struct {
 	// Value used for escaping where the field delimiter is part of the value.
 	QuoteCharacter *string `type:"string"`
 
-	// Single character used for escaping the quote character inside an already
+	// The single character used for escaping the quote character inside an already
 	// escaped value.
 	QuoteEscapeCharacter *string `type:"string"`
 
-	// Value used to separate individual records.
+	// The value used to separate individual records.
 	RecordDelimiter *string `type:"string"`
 }
 
@@ -7003,6 +7434,12 @@ func (s CSVInput) String() string {
 // GoString returns the string representation
 func (s CSVInput) GoString() string {
 	return s.String()
+}
+
+// SetAllowQuotedRecordDelimiter sets the AllowQuotedRecordDelimiter field's value.
+func (s *CSVInput) SetAllowQuotedRecordDelimiter(v bool) *CSVInput {
+	s.AllowQuotedRecordDelimiter = &v
+	return s
 }
 
 // SetComments sets the Comments field's value.
@@ -7045,20 +7482,20 @@ func (s *CSVInput) SetRecordDelimiter(v string) *CSVInput {
 type CSVOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Value used to separate individual fields in a record.
+	// The value used to separate individual fields in a record.
 	FieldDelimiter *string `type:"string"`
 
-	// Value used for escaping where the field delimiter is part of the value.
+	// The value used for escaping where the field delimiter is part of the value.
 	QuoteCharacter *string `type:"string"`
 
-	// Single character used for escaping the quote character inside an already
+	// Th single character used for escaping the quote character inside an already
 	// escaped value.
 	QuoteEscapeCharacter *string `type:"string"`
 
 	// Indicates whether or not all output fields should be quoted.
 	QuoteFields *string `type:"string" enum:"QuoteFields"`
 
-	// Value used to separate individual records.
+	// The value used to separate individual records.
 	RecordDelimiter *string `type:"string"`
 }
 
@@ -7107,12 +7544,14 @@ type CloudFunctionConfiguration struct {
 
 	CloudFunction *string `type:"string"`
 
-	// Bucket event for which to send notifications.
+	// The bucket event for which to send notifications.
+	//
+	// Deprecated: Event has been deprecated
 	Event *string `deprecated:"true" type:"string" enum:"Event"`
 
 	Events []*string `locationName:"Event" type:"list" flattened:"true"`
 
-	// Optional unique identifier for configurations in a notification configuration.
+	// An optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
 	Id *string `type:"string"`
 
@@ -7471,6 +7910,32 @@ func (s *Condition) SetKeyPrefixEquals(v string) *Condition {
 	return s
 }
 
+type ContinuationEvent struct {
+	_ struct{} `locationName:"ContinuationEvent" type:"structure"`
+}
+
+// String returns the string representation
+func (s ContinuationEvent) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ContinuationEvent) GoString() string {
+	return s.String()
+}
+
+// The ContinuationEvent is and event in the SelectObjectContentEventStream group of events.
+func (s *ContinuationEvent) eventSelectObjectContentEventStream() {}
+
+// UnmarshalEvent unmarshals the EventStream Message into the ContinuationEvent value.
+// This method is only used internally within the SDK's EventStream handling.
+func (s *ContinuationEvent) UnmarshalEvent(
+	payloadUnmarshaler protocol.PayloadUnmarshaler,
+	msg eventstream.Message,
+) error {
+	return nil
+}
+
 type CopyObjectInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7507,14 +7972,14 @@ type CopyObjectInput struct {
 	CopySourceIfMatch *string `location:"header" locationName:"x-amz-copy-source-if-match" type:"string"`
 
 	// Copies the object if it has been modified since the specified time.
-	CopySourceIfModifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-modified-since" type:"timestamp" timestampFormat:"rfc822"`
+	CopySourceIfModifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-modified-since" type:"timestamp"`
 
 	// Copies the object if its entity tag (ETag) is different than the specified
 	// ETag.
 	CopySourceIfNoneMatch *string `location:"header" locationName:"x-amz-copy-source-if-none-match" type:"string"`
 
 	// Copies the object if it hasn't been modified since the specified time.
-	CopySourceIfUnmodifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-unmodified-since" type:"timestamp" timestampFormat:"rfc822"`
+	CopySourceIfUnmodifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-unmodified-since" type:"timestamp"`
 
 	// Specifies the algorithm to use when decrypting the source object (e.g., AES256).
 	CopySourceSSECustomerAlgorithm *string `location:"header" locationName:"x-amz-copy-source-server-side-encryption-customer-algorithm" type:"string"`
@@ -7530,7 +7995,7 @@ type CopyObjectInput struct {
 	CopySourceSSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-copy-source-server-side-encryption-customer-key-MD5" type:"string"`
 
 	// The date and time at which the object is no longer cacheable.
-	Expires *time.Time `location:"header" locationName:"Expires" type:"timestamp" timestampFormat:"rfc822"`
+	Expires *time.Time `location:"header" locationName:"Expires" type:"timestamp"`
 
 	// Gives the grantee READ, READ_ACP, and WRITE_ACP permissions on the object.
 	GrantFullControl *string `location:"header" locationName:"x-amz-grant-full-control" type:"string"`
@@ -7959,7 +8424,7 @@ type CopyObjectResult struct {
 
 	ETag *string `type:"string"`
 
-	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
+	LastModified *time.Time `type:"timestamp"`
 }
 
 // String returns the string representation
@@ -7991,7 +8456,7 @@ type CopyPartResult struct {
 	ETag *string `type:"string"`
 
 	// Date and time at which the object was uploaded.
-	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
+	LastModified *time.Time `type:"timestamp"`
 }
 
 // String returns the string representation
@@ -8195,7 +8660,7 @@ type CreateMultipartUploadInput struct {
 	ContentType *string `location:"header" locationName:"Content-Type" type:"string"`
 
 	// The date and time at which the object is no longer cacheable.
-	Expires *time.Time `location:"header" locationName:"Expires" type:"timestamp" timestampFormat:"rfc822"`
+	Expires *time.Time `location:"header" locationName:"Expires" type:"timestamp"`
 
 	// Gives the grantee READ, READ_ACP, and WRITE_ACP permissions on the object.
 	GrantFullControl *string `location:"header" locationName:"x-amz-grant-full-control" type:"string"`
@@ -8443,7 +8908,7 @@ type CreateMultipartUploadOutput struct {
 	_ struct{} `type:"structure"`
 
 	// Date when multipart upload will become eligible for abort operation by lifecycle.
-	AbortDate *time.Time `location:"header" locationName:"x-amz-abort-date" type:"timestamp" timestampFormat:"rfc822"`
+	AbortDate *time.Time `location:"header" locationName:"x-amz-abort-date" type:"timestamp"`
 
 	// Id of the lifecycle rule that makes a multipart upload eligible for abort
 	// operation.
@@ -9124,6 +9589,11 @@ func (s DeleteBucketPolicyOutput) GoString() string {
 type DeleteBucketReplicationInput struct {
 	_ struct{} `type:"structure"`
 
+	// The bucket name.
+	//
+	// It can take a while to propagate the deletion of a replication configuration
+	// to all Amazon S3 systems.
+	//
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 }
@@ -9303,7 +9773,7 @@ type DeleteMarkerEntry struct {
 	Key *string `min:"1" type:"string"`
 
 	// Date and time the object was last modified.
-	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
+	LastModified *time.Time `type:"timestamp"`
 
 	Owner *Owner `type:"structure"`
 
@@ -9348,6 +9818,33 @@ func (s *DeleteMarkerEntry) SetOwner(v *Owner) *DeleteMarkerEntry {
 // SetVersionId sets the VersionId field's value.
 func (s *DeleteMarkerEntry) SetVersionId(v string) *DeleteMarkerEntry {
 	s.VersionId = &v
+	return s
+}
+
+// Specifies whether Amazon S3 should replicate delete makers.
+type DeleteMarkerReplication struct {
+	_ struct{} `type:"structure"`
+
+	// The status of the delete marker replication.
+	//
+	// In the current implementation, Amazon S3 doesn't replicate the delete markers.
+	// The status must be Disabled.
+	Status *string `type:"string" enum:"DeleteMarkerReplicationStatus"`
+}
+
+// String returns the string representation
+func (s DeleteMarkerReplication) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteMarkerReplication) GoString() string {
+	return s.String()
+}
+
+// SetStatus sets the Status field's value.
+func (s *DeleteMarkerReplication) SetStatus(v string) *DeleteMarkerReplication {
+	s.Status = &v
 	return s
 }
 
@@ -9696,6 +10193,66 @@ func (s *DeleteObjectsOutput) SetRequestCharged(v string) *DeleteObjectsOutput {
 	return s
 }
 
+type DeletePublicAccessBlockInput struct {
+	_ struct{} `type:"structure"`
+
+	// The Amazon S3 bucket whose Public Access Block configuration you want to
+	// delete.
+	//
+	// Bucket is a required field
+	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
+}
+
+// String returns the string representation
+func (s DeletePublicAccessBlockInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeletePublicAccessBlockInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DeletePublicAccessBlockInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DeletePublicAccessBlockInput"}
+	if s.Bucket == nil {
+		invalidParams.Add(request.NewErrParamRequired("Bucket"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetBucket sets the Bucket field's value.
+func (s *DeletePublicAccessBlockInput) SetBucket(v string) *DeletePublicAccessBlockInput {
+	s.Bucket = &v
+	return s
+}
+
+func (s *DeletePublicAccessBlockInput) getBucket() (v string) {
+	if s.Bucket == nil {
+		return v
+	}
+	return *s.Bucket
+}
+
+type DeletePublicAccessBlockOutput struct {
+	_ struct{} `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeletePublicAccessBlockOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeletePublicAccessBlockOutput) GoString() string {
+	return s.String()
+}
+
 type DeletedObject struct {
 	_ struct{} `type:"structure"`
 
@@ -9742,27 +10299,43 @@ func (s *DeletedObject) SetVersionId(v string) *DeletedObject {
 	return s
 }
 
-// Container for replication destination information.
+// A container for information about the replication destination.
 type Destination struct {
 	_ struct{} `type:"structure"`
 
-	// Container for information regarding the access control for replicas.
+	// A container for information about access control for replicas.
+	//
+	// Use this element only in a cross-account scenario where source and destination
+	// bucket owners are not the same to change replica ownership to the AWS account
+	// that owns the destination bucket. If you don't add this element to the replication
+	// configuration, the replicas are owned by same AWS account that owns the source
+	// object.
 	AccessControlTranslation *AccessControlTranslation `type:"structure"`
 
-	// Account ID of the destination bucket. Currently this is only being verified
-	// if Access Control Translation is enabled
+	// The account ID of the destination bucket. Currently, Amazon S3 verifies this
+	// value only if Access Control Translation is enabled.
+	//
+	// In a cross-account scenario, if you change replica ownership to the AWS account
+	// that owns the destination bucket by adding the AccessControlTranslation element,
+	// this is the account ID of the owner of the destination bucket.
 	Account *string `type:"string"`
 
-	// Amazon resource name (ARN) of the bucket where you want Amazon S3 to store
-	// replicas of the object identified by the rule.
+	// The Amazon Resource Name (ARN) of the bucket where you want Amazon S3 to
+	// store replicas of the object identified by the rule.
+	//
+	// If there are multiple rules in your replication configuration, all rules
+	// must specify the same bucket as the destination. A replication configuration
+	// can replicate objects to only one destination bucket.
 	//
 	// Bucket is a required field
 	Bucket *string `type:"string" required:"true"`
 
-	// Container for information regarding encryption based configuration for replicas.
+	// A container that provides information about encryption. If SourceSelectionCriteria
+	// is specified, you must specify this element.
 	EncryptionConfiguration *EncryptionConfiguration `type:"structure"`
 
-	// The class of storage used to store the object.
+	// The class of storage used to store the object. By default Amazon S3 uses
+	// storage class of the source object when creating a replica.
 	StorageClass *string `type:"string" enum:"StorageClass"`
 }
 
@@ -9892,11 +10465,13 @@ func (s *Encryption) SetKMSKeyId(v string) *Encryption {
 	return s
 }
 
-// Container for information regarding encryption based configuration for replicas.
+// A container for information about the encryption-based configuration for
+// replicas.
 type EncryptionConfiguration struct {
 	_ struct{} `type:"structure"`
 
-	// The id of the KMS key used to encrypt the replica object.
+	// The ID of the AWS KMS key for the AWS Region where the destination bucket
+	// resides. Amazon S3 uses this key to encrypt the replica object.
 	ReplicaKmsKeyID *string `type:"string"`
 }
 
@@ -9914,6 +10489,32 @@ func (s EncryptionConfiguration) GoString() string {
 func (s *EncryptionConfiguration) SetReplicaKmsKeyID(v string) *EncryptionConfiguration {
 	s.ReplicaKmsKeyID = &v
 	return s
+}
+
+type EndEvent struct {
+	_ struct{} `locationName:"EndEvent" type:"structure"`
+}
+
+// String returns the string representation
+func (s EndEvent) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s EndEvent) GoString() string {
+	return s.String()
+}
+
+// The EndEvent is and event in the SelectObjectContentEventStream group of events.
+func (s *EndEvent) eventSelectObjectContentEventStream() {}
+
+// UnmarshalEvent unmarshals the EventStream Message into the EndEvent value.
+// This method is only used internally within the SDK's EventStream handling.
+func (s *EndEvent) UnmarshalEvent(
+	payloadUnmarshaler protocol.PayloadUnmarshaler,
+	msg eventstream.Message,
+) error {
+	return nil
 }
 
 type Error struct {
@@ -10003,14 +10604,16 @@ func (s *ErrorDocument) SetKey(v string) *ErrorDocument {
 	return s
 }
 
-// Container for key value pair that defines the criteria for the filter rule.
+// A container for a key value pair that defines the criteria for the filter
+// rule.
 type FilterRule struct {
 	_ struct{} `type:"structure"`
 
-	// Object key name prefix or suffix identifying one or more objects to which
-	// the filtering rule applies. Maximum prefix length can be up to 1,024 characters.
+	// The object key name prefix or suffix identifying one or more objects to which
+	// the filtering rule applies. The maximum prefix length is 1,024 characters.
 	// Overlapping prefixes and suffixes are not supported. For more information,
-	// go to Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+	// see Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+	// in the Amazon Simple Storage Service Developer Guide.
 	Name *string `type:"string" enum:"FilterRuleName"`
 
 	Value *string `type:"string"`
@@ -10720,6 +11323,9 @@ func (s *GetBucketLoggingInput) getBucket() (v string) {
 type GetBucketLoggingOutput struct {
 	_ struct{} `type:"structure"`
 
+	// Container for logging information. Presence of this element indicates that
+	// logging is enabled. Parameters TargetBucket and TargetPrefix are required
+	// in this case.
 	LoggingEnabled *LoggingEnabled `type:"structure"`
 }
 
@@ -10932,6 +11538,74 @@ func (s *GetBucketPolicyOutput) SetPolicy(v string) *GetBucketPolicyOutput {
 	return s
 }
 
+type GetBucketPolicyStatusInput struct {
+	_ struct{} `type:"structure"`
+
+	// The name of the Amazon S3 bucket whose public-policy status you want to retrieve.
+	//
+	// Bucket is a required field
+	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
+}
+
+// String returns the string representation
+func (s GetBucketPolicyStatusInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetBucketPolicyStatusInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *GetBucketPolicyStatusInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "GetBucketPolicyStatusInput"}
+	if s.Bucket == nil {
+		invalidParams.Add(request.NewErrParamRequired("Bucket"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetBucket sets the Bucket field's value.
+func (s *GetBucketPolicyStatusInput) SetBucket(v string) *GetBucketPolicyStatusInput {
+	s.Bucket = &v
+	return s
+}
+
+func (s *GetBucketPolicyStatusInput) getBucket() (v string) {
+	if s.Bucket == nil {
+		return v
+	}
+	return *s.Bucket
+}
+
+type GetBucketPolicyStatusOutput struct {
+	_ struct{} `type:"structure" payload:"PolicyStatus"`
+
+	// The public-policy status for this bucket.
+	PolicyStatus *PolicyStatus `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetBucketPolicyStatusOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetBucketPolicyStatusOutput) GoString() string {
+	return s.String()
+}
+
+// SetPolicyStatus sets the PolicyStatus field's value.
+func (s *GetBucketPolicyStatusOutput) SetPolicyStatus(v *PolicyStatus) *GetBucketPolicyStatusOutput {
+	s.PolicyStatus = v
+	return s
+}
+
 type GetBucketReplicationInput struct {
 	_ struct{} `type:"structure"`
 
@@ -10978,8 +11652,8 @@ func (s *GetBucketReplicationInput) getBucket() (v string) {
 type GetBucketReplicationOutput struct {
 	_ struct{} `type:"structure" payload:"ReplicationConfiguration"`
 
-	// Container for replication rules. You can add as many as 1,000 rules. Total
-	// replication configuration size can be up to 2 MB.
+	// A container for replication rules. You can add up to 1,000 rules. The maximum
+	// size of a replication configuration is 2 MB.
 	ReplicationConfiguration *ReplicationConfiguration `type:"structure"`
 }
 
@@ -11429,7 +12103,7 @@ type GetObjectInput struct {
 
 	// Return the object only if it has been modified since the specified time,
 	// otherwise return a 304 (not modified).
-	IfModifiedSince *time.Time `location:"header" locationName:"If-Modified-Since" type:"timestamp" timestampFormat:"rfc822"`
+	IfModifiedSince *time.Time `location:"header" locationName:"If-Modified-Since" type:"timestamp"`
 
 	// Return the object only if its entity tag (ETag) is different from the one
 	// specified, otherwise return a 304 (not modified).
@@ -11437,7 +12111,7 @@ type GetObjectInput struct {
 
 	// Return the object only if it has not been modified since the specified time,
 	// otherwise return a 412 (precondition failed).
-	IfUnmodifiedSince *time.Time `location:"header" locationName:"If-Unmodified-Since" type:"timestamp" timestampFormat:"rfc822"`
+	IfUnmodifiedSince *time.Time `location:"header" locationName:"If-Unmodified-Since" type:"timestamp"`
 
 	// Key is a required field
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
@@ -11473,7 +12147,7 @@ type GetObjectInput struct {
 	ResponseContentType *string `location:"querystring" locationName:"response-content-type" type:"string"`
 
 	// Sets the Expires header of the response.
-	ResponseExpires *time.Time `location:"querystring" locationName:"response-expires" type:"timestamp" timestampFormat:"iso8601"`
+	ResponseExpires *time.Time `location:"querystring" locationName:"response-expires" type:"timestamp"`
 
 	// Specifies the algorithm to use to when encrypting the object (e.g., AES256).
 	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
@@ -11700,7 +12374,7 @@ type GetObjectOutput struct {
 	Expires *string `location:"header" locationName:"Expires" type:"string"`
 
 	// Last modified date of the object
-	LastModified *time.Time `location:"header" locationName:"Last-Modified" type:"timestamp" timestampFormat:"rfc822"`
+	LastModified *time.Time `location:"header" locationName:"Last-Modified" type:"timestamp"`
 
 	// A map of metadata to store with the object in S3.
 	Metadata map[string]*string `location:"headers" locationName:"x-amz-meta-" type:"map"`
@@ -12133,6 +12807,76 @@ func (s *GetObjectTorrentOutput) SetRequestCharged(v string) *GetObjectTorrentOu
 	return s
 }
 
+type GetPublicAccessBlockInput struct {
+	_ struct{} `type:"structure"`
+
+	// The name of the Amazon S3 bucket whose Public Access Block configuration
+	// you want to retrieve.
+	//
+	// Bucket is a required field
+	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
+}
+
+// String returns the string representation
+func (s GetPublicAccessBlockInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetPublicAccessBlockInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *GetPublicAccessBlockInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "GetPublicAccessBlockInput"}
+	if s.Bucket == nil {
+		invalidParams.Add(request.NewErrParamRequired("Bucket"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetBucket sets the Bucket field's value.
+func (s *GetPublicAccessBlockInput) SetBucket(v string) *GetPublicAccessBlockInput {
+	s.Bucket = &v
+	return s
+}
+
+func (s *GetPublicAccessBlockInput) getBucket() (v string) {
+	if s.Bucket == nil {
+		return v
+	}
+	return *s.Bucket
+}
+
+type GetPublicAccessBlockOutput struct {
+	_ struct{} `type:"structure" payload:"PublicAccessBlockConfiguration"`
+
+	// The Public Access Block configuration currently in effect for this Amazon
+	// S3 bucket.
+	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetPublicAccessBlockOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetPublicAccessBlockOutput) GoString() string {
+	return s.String()
+}
+
+// SetPublicAccessBlockConfiguration sets the PublicAccessBlockConfiguration field's value.
+func (s *GetPublicAccessBlockOutput) SetPublicAccessBlockConfiguration(v *PublicAccessBlockConfiguration) *GetPublicAccessBlockOutput {
+	s.PublicAccessBlockConfiguration = v
+	return s
+}
+
 type GlacierJobParameters struct {
 	_ struct{} `type:"structure"`
 
@@ -12360,7 +13104,7 @@ type HeadObjectInput struct {
 
 	// Return the object only if it has been modified since the specified time,
 	// otherwise return a 304 (not modified).
-	IfModifiedSince *time.Time `location:"header" locationName:"If-Modified-Since" type:"timestamp" timestampFormat:"rfc822"`
+	IfModifiedSince *time.Time `location:"header" locationName:"If-Modified-Since" type:"timestamp"`
 
 	// Return the object only if its entity tag (ETag) is different from the one
 	// specified, otherwise return a 304 (not modified).
@@ -12368,7 +13112,7 @@ type HeadObjectInput struct {
 
 	// Return the object only if it has not been modified since the specified time,
 	// otherwise return a 412 (precondition failed).
-	IfUnmodifiedSince *time.Time `location:"header" locationName:"If-Unmodified-Since" type:"timestamp" timestampFormat:"rfc822"`
+	IfUnmodifiedSince *time.Time `location:"header" locationName:"If-Unmodified-Since" type:"timestamp"`
 
 	// Key is a required field
 	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
@@ -12572,7 +13316,7 @@ type HeadObjectOutput struct {
 	Expires *string `location:"header" locationName:"Expires" type:"string"`
 
 	// Last modified date of the object
-	LastModified *time.Time `location:"header" locationName:"Last-Modified" type:"timestamp" timestampFormat:"rfc822"`
+	LastModified *time.Time `location:"header" locationName:"Last-Modified" type:"timestamp"`
 
 	// A map of metadata to store with the object in S3.
 	Metadata map[string]*string `location:"headers" locationName:"x-amz-meta-" type:"map"`
@@ -12865,6 +13609,16 @@ type InputSerialization struct {
 
 	// Describes the serialization of a CSV-encoded object.
 	CSV *CSVInput `type:"structure"`
+
+	// Specifies object's compression format. Valid values: NONE, GZIP, BZIP2. Default
+	// Value: NONE.
+	CompressionType *string `type:"string" enum:"CompressionType"`
+
+	// Specifies JSON as object's input serialization format.
+	JSON *JSONInput `type:"structure"`
+
+	// Specifies Parquet as object's input serialization format.
+	Parquet *ParquetInput `type:"structure"`
 }
 
 // String returns the string representation
@@ -12880,6 +13634,24 @@ func (s InputSerialization) GoString() string {
 // SetCSV sets the CSV field's value.
 func (s *InputSerialization) SetCSV(v *CSVInput) *InputSerialization {
 	s.CSV = v
+	return s
+}
+
+// SetCompressionType sets the CompressionType field's value.
+func (s *InputSerialization) SetCompressionType(v string) *InputSerialization {
+	s.CompressionType = &v
+	return s
+}
+
+// SetJSON sets the JSON field's value.
+func (s *InputSerialization) SetJSON(v *JSONInput) *InputSerialization {
+	s.JSON = v
+	return s
+}
+
+// SetParquet sets the Parquet field's value.
+func (s *InputSerialization) SetParquet(v *ParquetInput) *InputSerialization {
+	s.Parquet = v
 	return s
 }
 
@@ -13060,10 +13832,10 @@ func (s *InventoryDestination) SetS3BucketDestination(v *InventoryS3BucketDestin
 type InventoryEncryption struct {
 	_ struct{} `type:"structure"`
 
-	// Specifies the use of SSE-KMS to encrypt delievered Inventory reports.
+	// Specifies the use of SSE-KMS to encrypt delivered Inventory reports.
 	SSEKMS *SSEKMS `locationName:"SSE-KMS" type:"structure"`
 
-	// Specifies the use of SSE-S3 to encrypt delievered Inventory reports.
+	// Specifies the use of SSE-S3 to encrypt delivered Inventory reports.
 	SSES3 *SSES3 `locationName:"SSE-S3" type:"structure"`
 }
 
@@ -13273,12 +14045,58 @@ func (s *InventorySchedule) SetFrequency(v string) *InventorySchedule {
 	return s
 }
 
-// Container for object key name prefix and suffix filtering rules.
+type JSONInput struct {
+	_ struct{} `type:"structure"`
+
+	// The type of JSON. Valid values: Document, Lines.
+	Type *string `type:"string" enum:"JSONType"`
+}
+
+// String returns the string representation
+func (s JSONInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s JSONInput) GoString() string {
+	return s.String()
+}
+
+// SetType sets the Type field's value.
+func (s *JSONInput) SetType(v string) *JSONInput {
+	s.Type = &v
+	return s
+}
+
+type JSONOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The value used to separate individual records in the output.
+	RecordDelimiter *string `type:"string"`
+}
+
+// String returns the string representation
+func (s JSONOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s JSONOutput) GoString() string {
+	return s.String()
+}
+
+// SetRecordDelimiter sets the RecordDelimiter field's value.
+func (s *JSONOutput) SetRecordDelimiter(v string) *JSONOutput {
+	s.RecordDelimiter = &v
+	return s
+}
+
+// A container for object key name prefix and suffix filtering rules.
 type KeyFilter struct {
 	_ struct{} `type:"structure"`
 
-	// A list of containers for key value pair that defines the criteria for the
-	// filter rule.
+	// A list of containers for the key value pair that defines the criteria for
+	// the filter rule.
 	FilterRules []*FilterRule `locationName:"FilterRule" type:"list" flattened:"true"`
 }
 
@@ -13298,23 +14116,24 @@ func (s *KeyFilter) SetFilterRules(v []*FilterRule) *KeyFilter {
 	return s
 }
 
-// Container for specifying the AWS Lambda notification configuration.
+// A container for specifying the configuration for AWS Lambda notifications.
 type LambdaFunctionConfiguration struct {
 	_ struct{} `type:"structure"`
 
 	// Events is a required field
 	Events []*string `locationName:"Event" type:"list" flattened:"true" required:"true"`
 
-	// Container for object key name filtering rules. For information about key
-	// name filtering, go to Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+	// A container for object key name filtering rules. For information about key
+	// name filtering, see Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+	// in the Amazon Simple Storage Service Developer Guide.
 	Filter *NotificationConfigurationFilter `type:"structure"`
 
-	// Optional unique identifier for configurations in a notification configuration.
+	// An optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
 	Id *string `type:"string"`
 
-	// Lambda cloud function ARN that Amazon S3 can invoke when it detects events
-	// of the specified type.
+	// The Amazon Resource Name (ARN) of the Lambda cloud function that Amazon S3
+	// can invoke when it detects events of the specified type.
 	//
 	// LambdaFunctionArn is a required field
 	LambdaFunctionArn *string `locationName:"CloudFunction" type:"string" required:"true"`
@@ -13489,6 +14308,8 @@ type LifecycleRule struct {
 
 	// Prefix identifying one or more objects to which the rule applies. This is
 	// deprecated; use Filter instead.
+	//
+	// Deprecated: Prefix has been deprecated
 	Prefix *string `deprecated:"true" type:"string"`
 
 	// If 'Enabled', the rule is currently being applied. If 'Disabled', the rule
@@ -15124,7 +15945,7 @@ type ListPartsOutput struct {
 	_ struct{} `type:"structure"`
 
 	// Date when multipart upload will become eligible for abort operation by lifecycle.
-	AbortDate *time.Time `location:"header" locationName:"x-amz-abort-date" type:"timestamp" timestampFormat:"rfc822"`
+	AbortDate *time.Time `location:"header" locationName:"x-amz-abort-date" type:"timestamp"`
 
 	// Id of the lifecycle rule that makes a multipart upload eligible for abort
 	// operation.
@@ -15397,6 +16218,9 @@ func (s *Location) SetUserMetadata(v []*MetadataEntry) *Location {
 	return s
 }
 
+// Container for logging information. Presence of this element indicates that
+// logging is enabled. Parameters TargetBucket and TargetPrefix are required
+// in this case.
 type LoggingEnabled struct {
 	_ struct{} `type:"structure"`
 
@@ -15406,13 +16230,17 @@ type LoggingEnabled struct {
 	// to deliver their logs to the same target bucket. In this case you should
 	// choose a different TargetPrefix for each source bucket so that the delivered
 	// log files can be distinguished by key.
-	TargetBucket *string `type:"string"`
+	//
+	// TargetBucket is a required field
+	TargetBucket *string `type:"string" required:"true"`
 
 	TargetGrants []*TargetGrant `locationNameList:"Grant" type:"list"`
 
 	// This element lets you specify a prefix for the keys that the log files will
 	// be stored under.
-	TargetPrefix *string `type:"string"`
+	//
+	// TargetPrefix is a required field
+	TargetPrefix *string `type:"string" required:"true"`
 }
 
 // String returns the string representation
@@ -15428,6 +16256,12 @@ func (s LoggingEnabled) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *LoggingEnabled) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "LoggingEnabled"}
+	if s.TargetBucket == nil {
+		invalidParams.Add(request.NewErrParamRequired("TargetBucket"))
+	}
+	if s.TargetPrefix == nil {
+		invalidParams.Add(request.NewErrParamRequired("TargetPrefix"))
+	}
 	if s.TargetGrants != nil {
 		for i, v := range s.TargetGrants {
 			if v == nil {
@@ -15667,7 +16501,7 @@ type MultipartUpload struct {
 	_ struct{} `type:"structure"`
 
 	// Date and time at which the multipart upload was initiated.
-	Initiated *time.Time `type:"timestamp" timestampFormat:"iso8601"`
+	Initiated *time.Time `type:"timestamp"`
 
 	// Identifies who initiated the multipart upload.
 	Initiator *Initiator `type:"structure"`
@@ -15741,7 +16575,8 @@ type NoncurrentVersionExpiration struct {
 	// Specifies the number of days an object is noncurrent before Amazon S3 can
 	// perform the associated action. For information about the noncurrent days
 	// calculations, see How Amazon S3 Calculates When an Object Became Noncurrent
-	// (http://docs.aws.amazon.com/AmazonS3/latest/dev/s3-access-control.html)
+	// (http://docs.aws.amazon.com/AmazonS3/latest/dev/s3-access-control.html) in
+	// the Amazon Simple Storage Service Developer Guide.
 	NoncurrentDays *int64 `type:"integer"`
 }
 
@@ -15762,17 +16597,19 @@ func (s *NoncurrentVersionExpiration) SetNoncurrentDays(v int64) *NoncurrentVers
 }
 
 // Container for the transition rule that describes when noncurrent objects
-// transition to the STANDARD_IA or GLACIER storage class. If your bucket is
-// versioning-enabled (or versioning is suspended), you can set this action
-// to request that Amazon S3 transition noncurrent object versions to the STANDARD_IA
-// or GLACIER storage class at a specific period in the object's lifetime.
+// transition to the STANDARD_IA, ONEZONE_IA, or GLACIER storage class. If your
+// bucket is versioning-enabled (or versioning is suspended), you can set this
+// action to request that Amazon S3 transition noncurrent object versions to
+// the STANDARD_IA, ONEZONE_IA, or GLACIER storage class at a specific period
+// in the object's lifetime.
 type NoncurrentVersionTransition struct {
 	_ struct{} `type:"structure"`
 
 	// Specifies the number of days an object is noncurrent before Amazon S3 can
 	// perform the associated action. For information about the noncurrent days
 	// calculations, see How Amazon S3 Calculates When an Object Became Noncurrent
-	// (http://docs.aws.amazon.com/AmazonS3/latest/dev/s3-access-control.html)
+	// (http://docs.aws.amazon.com/AmazonS3/latest/dev/s3-access-control.html) in
+	// the Amazon Simple Storage Service Developer Guide.
 	NoncurrentDays *int64 `type:"integer"`
 
 	// The class of storage used to store the object.
@@ -15801,8 +16638,8 @@ func (s *NoncurrentVersionTransition) SetStorageClass(v string) *NoncurrentVersi
 	return s
 }
 
-// Container for specifying the notification configuration of the bucket. If
-// this element is empty, notifications are turned off on the bucket.
+// A container for specifying the notification configuration of the bucket.
+// If this element is empty, notifications are turned off for the bucket.
 type NotificationConfiguration struct {
 	_ struct{} `type:"structure"`
 
@@ -15919,12 +16756,13 @@ func (s *NotificationConfigurationDeprecated) SetTopicConfiguration(v *TopicConf
 	return s
 }
 
-// Container for object key name filtering rules. For information about key
-// name filtering, go to Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+// A container for object key name filtering rules. For information about key
+// name filtering, see Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+// in the Amazon Simple Storage Service Developer Guide.
 type NotificationConfigurationFilter struct {
 	_ struct{} `type:"structure"`
 
-	// Container for object key name prefix and suffix filtering rules.
+	// A container for object key name prefix and suffix filtering rules.
 	Key *KeyFilter `locationName:"S3Key" type:"structure"`
 }
 
@@ -15951,7 +16789,7 @@ type Object struct {
 
 	Key *string `min:"1" type:"string"`
 
-	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
+	LastModified *time.Time `type:"timestamp"`
 
 	Owner *Owner `type:"structure"`
 
@@ -16070,7 +16908,7 @@ type ObjectVersion struct {
 	Key *string `min:"1" type:"string"`
 
 	// Date and time the object was last modified.
-	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
+	LastModified *time.Time `type:"timestamp"`
 
 	Owner *Owner `type:"structure"`
 
@@ -16187,6 +17025,9 @@ type OutputSerialization struct {
 
 	// Describes the serialization of CSV-encoded Select results.
 	CSV *CSVOutput `type:"structure"`
+
+	// Specifies JSON as request's output serialization format.
+	JSON *JSONOutput `type:"structure"`
 }
 
 // String returns the string representation
@@ -16202,6 +17043,12 @@ func (s OutputSerialization) GoString() string {
 // SetCSV sets the CSV field's value.
 func (s *OutputSerialization) SetCSV(v *CSVOutput) *OutputSerialization {
 	s.CSV = v
+	return s
+}
+
+// SetJSON sets the JSON field's value.
+func (s *OutputSerialization) SetJSON(v *JSONOutput) *OutputSerialization {
+	s.JSON = v
 	return s
 }
 
@@ -16235,6 +17082,20 @@ func (s *Owner) SetID(v string) *Owner {
 	return s
 }
 
+type ParquetInput struct {
+	_ struct{} `type:"structure"`
+}
+
+// String returns the string representation
+func (s ParquetInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ParquetInput) GoString() string {
+	return s.String()
+}
+
 type Part struct {
 	_ struct{} `type:"structure"`
 
@@ -16242,13 +17103,13 @@ type Part struct {
 	ETag *string `type:"string"`
 
 	// Date and time at which the part was uploaded.
-	LastModified *time.Time `type:"timestamp" timestampFormat:"iso8601"`
+	LastModified *time.Time `type:"timestamp"`
 
 	// Part number identifying the part. This is a positive integer between 1 and
 	// 10,000.
 	PartNumber *int64 `type:"integer"`
 
-	// Size of the uploaded part data.
+	// Size in bytes of the uploaded part data.
 	Size *int64 `type:"integer"`
 }
 
@@ -16283,6 +17144,218 @@ func (s *Part) SetPartNumber(v int64) *Part {
 // SetSize sets the Size field's value.
 func (s *Part) SetSize(v int64) *Part {
 	s.Size = &v
+	return s
+}
+
+// The container element for this bucket's public-policy status.
+type PolicyStatus struct {
+	_ struct{} `type:"structure"`
+
+	// The public-policy status for this bucket. TRUE indicates that this bucket
+	// is public. FALSE indicates that the bucket is not public.
+	IsPublic *bool `locationName:"IsPublic" type:"boolean"`
+}
+
+// String returns the string representation
+func (s PolicyStatus) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PolicyStatus) GoString() string {
+	return s.String()
+}
+
+// SetIsPublic sets the IsPublic field's value.
+func (s *PolicyStatus) SetIsPublic(v bool) *PolicyStatus {
+	s.IsPublic = &v
+	return s
+}
+
+type Progress struct {
+	_ struct{} `type:"structure"`
+
+	// The current number of uncompressed object bytes processed.
+	BytesProcessed *int64 `type:"long"`
+
+	// The current number of bytes of records payload data returned.
+	BytesReturned *int64 `type:"long"`
+
+	// The current number of object bytes scanned.
+	BytesScanned *int64 `type:"long"`
+}
+
+// String returns the string representation
+func (s Progress) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s Progress) GoString() string {
+	return s.String()
+}
+
+// SetBytesProcessed sets the BytesProcessed field's value.
+func (s *Progress) SetBytesProcessed(v int64) *Progress {
+	s.BytesProcessed = &v
+	return s
+}
+
+// SetBytesReturned sets the BytesReturned field's value.
+func (s *Progress) SetBytesReturned(v int64) *Progress {
+	s.BytesReturned = &v
+	return s
+}
+
+// SetBytesScanned sets the BytesScanned field's value.
+func (s *Progress) SetBytesScanned(v int64) *Progress {
+	s.BytesScanned = &v
+	return s
+}
+
+type ProgressEvent struct {
+	_ struct{} `locationName:"ProgressEvent" type:"structure" payload:"Details"`
+
+	// The Progress event details.
+	Details *Progress `locationName:"Details" type:"structure"`
+}
+
+// String returns the string representation
+func (s ProgressEvent) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ProgressEvent) GoString() string {
+	return s.String()
+}
+
+// SetDetails sets the Details field's value.
+func (s *ProgressEvent) SetDetails(v *Progress) *ProgressEvent {
+	s.Details = v
+	return s
+}
+
+// The ProgressEvent is and event in the SelectObjectContentEventStream group of events.
+func (s *ProgressEvent) eventSelectObjectContentEventStream() {}
+
+// UnmarshalEvent unmarshals the EventStream Message into the ProgressEvent value.
+// This method is only used internally within the SDK's EventStream handling.
+func (s *ProgressEvent) UnmarshalEvent(
+	payloadUnmarshaler protocol.PayloadUnmarshaler,
+	msg eventstream.Message,
+) error {
+	if err := payloadUnmarshaler.UnmarshalPayload(
+		bytes.NewReader(msg.Payload), s,
+	); err != nil {
+		return err
+	}
+	return nil
+}
+
+// The container element for all Public Access Block configuration options.
+// You can enable the configuration options in any combination.
+//
+// Amazon S3 considers a bucket policy public unless at least one of the following
+// conditions is true:
+//
+// The policy limits access to a set of CIDRs using aws:SourceIp. For more information
+// on CIDR, see http://www.rfc-editor.org/rfc/rfc4632.txt (http://www.rfc-editor.org/rfc/rfc4632.txt)
+//
+// The policy grants permissions, not including any "bad actions," to one of
+// the following:
+//
+// A fixed AWS principal, user, role, or service principal
+//
+// A fixed aws:SourceArn
+//
+// A fixed aws:SourceVpc
+//
+// A fixed aws:SourceVpce
+//
+// A fixed aws:SourceOwner
+//
+// A fixed aws:SourceAccount
+//
+// A fixed value of s3:x-amz-server-side-encryption-aws-kms-key-id
+//
+// A fixed value of aws:userid outside the pattern "AROLEID:*"
+//
+// "Bad actions" are those that could expose the data inside a bucket to reads
+// or writes by the public. These actions are s3:Get*, s3:List*, s3:AbortMultipartUpload,
+// s3:Delete*, s3:Put*, and s3:RestoreObject.
+//
+// The star notation for bad actions indicates that all matching operations
+// are considered bad actions. For example, because s3:Get* is a bad action,
+// s3:GetObject, s3:GetObjectVersion, and s3:GetObjectAcl are all bad actions.
+type PublicAccessBlockConfiguration struct {
+	_ struct{} `type:"structure"`
+
+	// Specifies whether Amazon S3 should block public ACLs for this bucket. Setting
+	// this element to TRUEcauses the following behavior:
+	//
+	// PUT Bucket acl and PUT Object acl calls will fail if the specified ACL allows
+	// public access.
+	//
+	//    * PUT Object calls will fail if the request includes an object ACL.
+	BlockPublicAcls *bool `locationName:"BlockPublicAcls" type:"boolean"`
+
+	// Specifies whether Amazon S3 should block public bucket policies for this
+	// bucket. Setting this element to TRUE causes Amazon S3 to reject calls to
+	// PUT Bucket policy if the specified bucket policy allows public access.
+	//
+	// Note that enabling this setting doesn't affect existing bucket policies.
+	BlockPublicPolicy *bool `locationName:"BlockPublicPolicy" type:"boolean"`
+
+	// Specifies whether Amazon S3 should ignore public ACLs for this bucket. Setting
+	// this element to TRUE causes Amazon S3 to ignore all public ACLs on this bucket
+	// and any objects that it contains.
+	//
+	// Note that enabling this setting doesn't affect the persistence of any existing
+	// ACLs and doesn't prevent new public ACLs from being set.
+	IgnorePublicAcls *bool `locationName:"IgnorePublicAcls" type:"boolean"`
+
+	// Specifies whether Amazon S3 should restrict public bucket policies for this
+	// bucket. If this element is set to TRUE, then only the bucket owner and AWS
+	// Services can access this bucket if it has a public policy.
+	//
+	// Note that enabling this setting doesn't affect previously stored bucket policies,
+	// except that public and cross-account access within any public bucket policy,
+	// including non-public delegation to specific accounts, is blocked.
+	RestrictPublicBuckets *bool `locationName:"RestrictPublicBuckets" type:"boolean"`
+}
+
+// String returns the string representation
+func (s PublicAccessBlockConfiguration) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PublicAccessBlockConfiguration) GoString() string {
+	return s.String()
+}
+
+// SetBlockPublicAcls sets the BlockPublicAcls field's value.
+func (s *PublicAccessBlockConfiguration) SetBlockPublicAcls(v bool) *PublicAccessBlockConfiguration {
+	s.BlockPublicAcls = &v
+	return s
+}
+
+// SetBlockPublicPolicy sets the BlockPublicPolicy field's value.
+func (s *PublicAccessBlockConfiguration) SetBlockPublicPolicy(v bool) *PublicAccessBlockConfiguration {
+	s.BlockPublicPolicy = &v
+	return s
+}
+
+// SetIgnorePublicAcls sets the IgnorePublicAcls field's value.
+func (s *PublicAccessBlockConfiguration) SetIgnorePublicAcls(v bool) *PublicAccessBlockConfiguration {
+	s.IgnorePublicAcls = &v
+	return s
+}
+
+// SetRestrictPublicBuckets sets the RestrictPublicBuckets field's value.
+func (s *PublicAccessBlockConfiguration) SetRestrictPublicBuckets(v bool) *PublicAccessBlockConfiguration {
+	s.RestrictPublicBuckets = &v
 	return s
 }
 
@@ -17134,8 +18207,8 @@ type PutBucketNotificationConfigurationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Container for specifying the notification configuration of the bucket. If
-	// this element is empty, notifications are turned off on the bucket.
+	// A container for specifying the notification configuration of the bucket.
+	// If this element is empty, notifications are turned off for the bucket.
 	//
 	// NotificationConfiguration is a required field
 	NotificationConfiguration *NotificationConfiguration `locationName:"NotificationConfiguration" type:"structure" required:"true" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
@@ -17361,8 +18434,8 @@ type PutBucketReplicationInput struct {
 	// Bucket is a required field
 	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
 
-	// Container for replication rules. You can add as many as 1,000 rules. Total
-	// replication configuration size can be up to 2 MB.
+	// A container for replication rules. You can add up to 1,000 rules. The maximum
+	// size of a replication configuration is 2 MB.
 	//
 	// ReplicationConfiguration is a required field
 	ReplicationConfiguration *ReplicationConfiguration `locationName:"ReplicationConfiguration" type:"structure" required:"true" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
@@ -17943,7 +19016,7 @@ type PutObjectInput struct {
 	ContentType *string `location:"header" locationName:"Content-Type" type:"string"`
 
 	// The date and time at which the object is no longer cacheable.
-	Expires *time.Time `location:"header" locationName:"Expires" type:"timestamp" timestampFormat:"rfc822"`
+	Expires *time.Time `location:"header" locationName:"Expires" type:"timestamp"`
 
 	// Gives the grantee READ, READ_ACP, and WRITE_ACP permissions on the object.
 	GrantFullControl *string `location:"header" locationName:"x-amz-grant-full-control" type:"string"`
@@ -17999,7 +19072,8 @@ type PutObjectInput struct {
 	// The type of storage to use for the object. Defaults to 'STANDARD'.
 	StorageClass *string `location:"header" locationName:"x-amz-storage-class" type:"string" enum:"StorageClass"`
 
-	// The tag-set for the object. The tag-set must be encoded as URL Query parameters
+	// The tag-set for the object. The tag-set must be encoded as URL Query parameters.
+	// (For example, "Key1=Value1")
 	Tagging *string `location:"header" locationName:"x-amz-tagging" type:"string"`
 
 	// If the bucket is configured as a website, redirects requests for this object
@@ -18406,24 +19480,101 @@ func (s *PutObjectTaggingOutput) SetVersionId(v string) *PutObjectTaggingOutput 
 	return s
 }
 
-// Container for specifying an configuration when you want Amazon S3 to publish
-// events to an Amazon Simple Queue Service (Amazon SQS) queue.
+type PutPublicAccessBlockInput struct {
+	_ struct{} `type:"structure" payload:"PublicAccessBlockConfiguration"`
+
+	// The name of the Amazon S3 bucket whose Public Access Block configuration
+	// you want to set.
+	//
+	// Bucket is a required field
+	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
+
+	// The Public Access Block configuration that you want to apply to this Amazon
+	// S3 bucket.
+	//
+	// PublicAccessBlockConfiguration is a required field
+	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `locationName:"PublicAccessBlockConfiguration" type:"structure" required:"true" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
+}
+
+// String returns the string representation
+func (s PutPublicAccessBlockInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PutPublicAccessBlockInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *PutPublicAccessBlockInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "PutPublicAccessBlockInput"}
+	if s.Bucket == nil {
+		invalidParams.Add(request.NewErrParamRequired("Bucket"))
+	}
+	if s.PublicAccessBlockConfiguration == nil {
+		invalidParams.Add(request.NewErrParamRequired("PublicAccessBlockConfiguration"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetBucket sets the Bucket field's value.
+func (s *PutPublicAccessBlockInput) SetBucket(v string) *PutPublicAccessBlockInput {
+	s.Bucket = &v
+	return s
+}
+
+func (s *PutPublicAccessBlockInput) getBucket() (v string) {
+	if s.Bucket == nil {
+		return v
+	}
+	return *s.Bucket
+}
+
+// SetPublicAccessBlockConfiguration sets the PublicAccessBlockConfiguration field's value.
+func (s *PutPublicAccessBlockInput) SetPublicAccessBlockConfiguration(v *PublicAccessBlockConfiguration) *PutPublicAccessBlockInput {
+	s.PublicAccessBlockConfiguration = v
+	return s
+}
+
+type PutPublicAccessBlockOutput struct {
+	_ struct{} `type:"structure"`
+}
+
+// String returns the string representation
+func (s PutPublicAccessBlockOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PutPublicAccessBlockOutput) GoString() string {
+	return s.String()
+}
+
+// A container for specifying the configuration for publication of messages
+// to an Amazon Simple Queue Service (Amazon SQS) queue.when Amazon S3 detects
+// specified events.
 type QueueConfiguration struct {
 	_ struct{} `type:"structure"`
 
 	// Events is a required field
 	Events []*string `locationName:"Event" type:"list" flattened:"true" required:"true"`
 
-	// Container for object key name filtering rules. For information about key
-	// name filtering, go to Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+	// A container for object key name filtering rules. For information about key
+	// name filtering, see Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+	// in the Amazon Simple Storage Service Developer Guide.
 	Filter *NotificationConfigurationFilter `type:"structure"`
 
-	// Optional unique identifier for configurations in a notification configuration.
+	// An optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
 	Id *string `type:"string"`
 
-	// Amazon SQS queue ARN to which Amazon S3 will publish a message when it detects
-	// events of specified type.
+	// The Amazon Resource Name (ARN) of the Amazon SQS queue to which Amazon S3
+	// will publish a message when it detects events of the specified type.
 	//
 	// QueueArn is a required field
 	QueueArn *string `locationName:"Queue" type:"string" required:"true"`
@@ -18482,12 +19633,14 @@ func (s *QueueConfiguration) SetQueueArn(v string) *QueueConfiguration {
 type QueueConfigurationDeprecated struct {
 	_ struct{} `type:"structure"`
 
-	// Bucket event for which to send notifications.
+	// The bucket event for which to send notifications.
+	//
+	// Deprecated: Event has been deprecated
 	Event *string `deprecated:"true" type:"string" enum:"Event"`
 
 	Events []*string `locationName:"Event" type:"list" flattened:"true"`
 
-	// Optional unique identifier for configurations in a notification configuration.
+	// An optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
 	Id *string `type:"string"`
 
@@ -18526,6 +19679,45 @@ func (s *QueueConfigurationDeprecated) SetId(v string) *QueueConfigurationDeprec
 func (s *QueueConfigurationDeprecated) SetQueue(v string) *QueueConfigurationDeprecated {
 	s.Queue = &v
 	return s
+}
+
+type RecordsEvent struct {
+	_ struct{} `locationName:"RecordsEvent" type:"structure" payload:"Payload"`
+
+	// The byte array of partial, one or more result records.
+	//
+	// Payload is automatically base64 encoded/decoded by the SDK.
+	Payload []byte `type:"blob"`
+}
+
+// String returns the string representation
+func (s RecordsEvent) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s RecordsEvent) GoString() string {
+	return s.String()
+}
+
+// SetPayload sets the Payload field's value.
+func (s *RecordsEvent) SetPayload(v []byte) *RecordsEvent {
+	s.Payload = v
+	return s
+}
+
+// The RecordsEvent is and event in the SelectObjectContentEventStream group of events.
+func (s *RecordsEvent) eventSelectObjectContentEventStream() {}
+
+// UnmarshalEvent unmarshals the EventStream Message into the RecordsEvent value.
+// This method is only used internally within the SDK's EventStream handling.
+func (s *RecordsEvent) UnmarshalEvent(
+	payloadUnmarshaler protocol.PayloadUnmarshaler,
+	msg eventstream.Message,
+) error {
+	s.Payload = make([]byte, len(msg.Payload))
+	copy(s.Payload, msg.Payload)
+	return nil
 }
 
 type Redirect struct {
@@ -18644,19 +19836,19 @@ func (s *RedirectAllRequestsTo) SetProtocol(v string) *RedirectAllRequestsTo {
 	return s
 }
 
-// Container for replication rules. You can add as many as 1,000 rules. Total
-// replication configuration size can be up to 2 MB.
+// A container for replication rules. You can add up to 1,000 rules. The maximum
+// size of a replication configuration is 2 MB.
 type ReplicationConfiguration struct {
 	_ struct{} `type:"structure"`
 
-	// Amazon Resource Name (ARN) of an IAM role for Amazon S3 to assume when replicating
-	// the objects.
+	// The Amazon Resource Name (ARN) of the AWS Identity and Access Management
+	// (IAM) role that Amazon S3 can assume when replicating the objects.
 	//
 	// Role is a required field
 	Role *string `type:"string" required:"true"`
 
-	// Container for information about a particular replication rule. Replication
-	// configuration must have at least one rule and can contain up to 1,000 rules.
+	// A container for one or more replication rules. A replication configuration
+	// must have at least one rule and can contain a maximum of 1,000 rules.
 	//
 	// Rules is a required field
 	Rules []*ReplicationRule `locationName:"Rule" type:"list" flattened:"true" required:"true"`
@@ -18710,29 +19902,57 @@ func (s *ReplicationConfiguration) SetRules(v []*ReplicationRule) *ReplicationCo
 	return s
 }
 
-// Container for information about a particular replication rule.
+// A container for information about a specific replication rule.
 type ReplicationRule struct {
 	_ struct{} `type:"structure"`
 
-	// Container for replication destination information.
+	// Specifies whether Amazon S3 should replicate delete makers.
+	DeleteMarkerReplication *DeleteMarkerReplication `type:"structure"`
+
+	// A container for information about the replication destination.
 	//
 	// Destination is a required field
 	Destination *Destination `type:"structure" required:"true"`
 
-	// Unique identifier for the rule. The value cannot be longer than 255 characters.
+	// A filter that identifies the subset of objects to which the replication rule
+	// applies. A Filter must specify exactly one Prefix, Tag, or an And child element.
+	Filter *ReplicationRuleFilter `type:"structure"`
+
+	// A unique identifier for the rule. The maximum value is 255 characters.
 	ID *string `type:"string"`
 
-	// Object keyname prefix identifying one or more objects to which the rule applies.
-	// Maximum prefix length can be up to 1,024 characters. Overlapping prefixes
-	// are not supported.
+	// An object keyname prefix that identifies the object or objects to which the
+	// rule applies. The maximum prefix length is 1,024 characters.
 	//
-	// Prefix is a required field
-	Prefix *string `type:"string" required:"true"`
+	// Deprecated: Prefix has been deprecated
+	Prefix *string `deprecated:"true" type:"string"`
 
-	// Container for filters that define which source objects should be replicated.
+	// The priority associated with the rule. If you specify multiple rules in a
+	// replication configuration, Amazon S3 prioritizes the rules to prevent conflicts
+	// when filtering. If two or more rules identify the same object based on a
+	// specified filter, the rule with higher priority takes precedence. For example:
+	//
+	//    * Same object quality prefix based filter criteria If prefixes you specified
+	//    in multiple rules overlap
+	//
+	//    * Same object qualify tag based filter criteria specified in multiple
+	//    rules
+	//
+	// For more information, see Cross-Region Replication (CRR) ( https://docs.aws.amazon.com/AmazonS3/latest/dev/crr.html)
+	// in the Amazon S3 Developer Guide.
+	Priority *int64 `type:"integer"`
+
+	// A container that describes additional filters for identifying the source
+	// objects that you want to replicate. You can choose to enable or disable the
+	// replication of these objects. Currently, Amazon S3 supports only the filter
+	// that you can specify for objects created with server-side encryption using
+	// an AWS KMS-Managed Key (SSE-KMS).
+	//
+	// If you want Amazon S3 to replicate objects created with server-side encryption
+	// using AWS KMS-Managed Keys.
 	SourceSelectionCriteria *SourceSelectionCriteria `type:"structure"`
 
-	// The rule is ignored if status is not Enabled.
+	// If status isn't enabled, the rule is ignored.
 	//
 	// Status is a required field
 	Status *string `type:"string" required:"true" enum:"ReplicationRuleStatus"`
@@ -18754,15 +19974,17 @@ func (s *ReplicationRule) Validate() error {
 	if s.Destination == nil {
 		invalidParams.Add(request.NewErrParamRequired("Destination"))
 	}
-	if s.Prefix == nil {
-		invalidParams.Add(request.NewErrParamRequired("Prefix"))
-	}
 	if s.Status == nil {
 		invalidParams.Add(request.NewErrParamRequired("Status"))
 	}
 	if s.Destination != nil {
 		if err := s.Destination.Validate(); err != nil {
 			invalidParams.AddNested("Destination", err.(request.ErrInvalidParams))
+		}
+	}
+	if s.Filter != nil {
+		if err := s.Filter.Validate(); err != nil {
+			invalidParams.AddNested("Filter", err.(request.ErrInvalidParams))
 		}
 	}
 	if s.SourceSelectionCriteria != nil {
@@ -18777,9 +19999,21 @@ func (s *ReplicationRule) Validate() error {
 	return nil
 }
 
+// SetDeleteMarkerReplication sets the DeleteMarkerReplication field's value.
+func (s *ReplicationRule) SetDeleteMarkerReplication(v *DeleteMarkerReplication) *ReplicationRule {
+	s.DeleteMarkerReplication = v
+	return s
+}
+
 // SetDestination sets the Destination field's value.
 func (s *ReplicationRule) SetDestination(v *Destination) *ReplicationRule {
 	s.Destination = v
+	return s
+}
+
+// SetFilter sets the Filter field's value.
+func (s *ReplicationRule) SetFilter(v *ReplicationRuleFilter) *ReplicationRule {
+	s.Filter = v
 	return s
 }
 
@@ -18795,6 +20029,12 @@ func (s *ReplicationRule) SetPrefix(v string) *ReplicationRule {
 	return s
 }
 
+// SetPriority sets the Priority field's value.
+func (s *ReplicationRule) SetPriority(v int64) *ReplicationRule {
+	s.Priority = &v
+	return s
+}
+
 // SetSourceSelectionCriteria sets the SourceSelectionCriteria field's value.
 func (s *ReplicationRule) SetSourceSelectionCriteria(v *SourceSelectionCriteria) *ReplicationRule {
 	s.SourceSelectionCriteria = v
@@ -18804,6 +20044,130 @@ func (s *ReplicationRule) SetSourceSelectionCriteria(v *SourceSelectionCriteria)
 // SetStatus sets the Status field's value.
 func (s *ReplicationRule) SetStatus(v string) *ReplicationRule {
 	s.Status = &v
+	return s
+}
+
+type ReplicationRuleAndOperator struct {
+	_ struct{} `type:"structure"`
+
+	Prefix *string `type:"string"`
+
+	Tags []*Tag `locationName:"Tag" locationNameList:"Tag" type:"list" flattened:"true"`
+}
+
+// String returns the string representation
+func (s ReplicationRuleAndOperator) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ReplicationRuleAndOperator) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ReplicationRuleAndOperator) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ReplicationRuleAndOperator"}
+	if s.Tags != nil {
+		for i, v := range s.Tags {
+			if v == nil {
+				continue
+			}
+			if err := v.Validate(); err != nil {
+				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "Tags", i), err.(request.ErrInvalidParams))
+			}
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetPrefix sets the Prefix field's value.
+func (s *ReplicationRuleAndOperator) SetPrefix(v string) *ReplicationRuleAndOperator {
+	s.Prefix = &v
+	return s
+}
+
+// SetTags sets the Tags field's value.
+func (s *ReplicationRuleAndOperator) SetTags(v []*Tag) *ReplicationRuleAndOperator {
+	s.Tags = v
+	return s
+}
+
+// A filter that identifies the subset of objects to which the replication rule
+// applies. A Filter must specify exactly one Prefix, Tag, or an And child element.
+type ReplicationRuleFilter struct {
+	_ struct{} `type:"structure"`
+
+	// A container for specifying rule filters. The filters determine the subset
+	// of objects to which the rule applies. This element is required only if you
+	// specify more than one filter. For example:
+	//
+	//    * If you specify both a Prefix and a Tag filter, wrap these filters in
+	//    an And tag.
+	//
+	//    * If you specify a filter based on multiple tags, wrap the Tag elements
+	//    in an And tag.
+	And *ReplicationRuleAndOperator `type:"structure"`
+
+	// An object keyname prefix that identifies the subset of objects to which the
+	// rule applies.
+	Prefix *string `type:"string"`
+
+	// A container for specifying a tag key and value.
+	//
+	// The rule applies only to objects that have the tag in their tag set.
+	Tag *Tag `type:"structure"`
+}
+
+// String returns the string representation
+func (s ReplicationRuleFilter) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ReplicationRuleFilter) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ReplicationRuleFilter) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ReplicationRuleFilter"}
+	if s.And != nil {
+		if err := s.And.Validate(); err != nil {
+			invalidParams.AddNested("And", err.(request.ErrInvalidParams))
+		}
+	}
+	if s.Tag != nil {
+		if err := s.Tag.Validate(); err != nil {
+			invalidParams.AddNested("Tag", err.(request.ErrInvalidParams))
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetAnd sets the And field's value.
+func (s *ReplicationRuleFilter) SetAnd(v *ReplicationRuleAndOperator) *ReplicationRuleFilter {
+	s.And = v
+	return s
+}
+
+// SetPrefix sets the Prefix field's value.
+func (s *ReplicationRuleFilter) SetPrefix(v string) *ReplicationRuleFilter {
+	s.Prefix = &v
+	return s
+}
+
+// SetTag sets the Tag field's value.
+func (s *ReplicationRuleFilter) SetTag(v *Tag) *ReplicationRuleFilter {
+	s.Tag = v
 	return s
 }
 
@@ -18842,6 +20206,30 @@ func (s *RequestPaymentConfiguration) Validate() error {
 // SetPayer sets the Payer field's value.
 func (s *RequestPaymentConfiguration) SetPayer(v string) *RequestPaymentConfiguration {
 	s.Payer = &v
+	return s
+}
+
+type RequestProgress struct {
+	_ struct{} `type:"structure"`
+
+	// Specifies whether periodic QueryProgress frames should be sent. Valid values:
+	// TRUE, FALSE. Default value: FALSE.
+	Enabled *bool `type:"boolean"`
+}
+
+// String returns the string representation
+func (s RequestProgress) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s RequestProgress) GoString() string {
+	return s.String()
+}
+
+// SetEnabled sets the Enabled field's value.
+func (s *RequestProgress) SetEnabled(v bool) *RequestProgress {
+	s.Enabled = &v
 	return s
 }
 
@@ -19087,7 +20475,7 @@ type RoutingRule struct {
 
 	// Container for redirect information. You can redirect requests to another
 	// host, to another page, or with another protocol. In the event of an error,
-	// you can can specify a different error code to return.
+	// you can specify a different error code to return.
 	//
 	// Redirect is a required field
 	Redirect *Redirect `type:"structure" required:"true"`
@@ -19148,10 +20536,11 @@ type Rule struct {
 	NoncurrentVersionExpiration *NoncurrentVersionExpiration `type:"structure"`
 
 	// Container for the transition rule that describes when noncurrent objects
-	// transition to the STANDARD_IA or GLACIER storage class. If your bucket is
-	// versioning-enabled (or versioning is suspended), you can set this action
-	// to request that Amazon S3 transition noncurrent object versions to the STANDARD_IA
-	// or GLACIER storage class at a specific period in the object's lifetime.
+	// transition to the STANDARD_IA, ONEZONE_IA, or GLACIER storage class. If your
+	// bucket is versioning-enabled (or versioning is suspended), you can set this
+	// action to request that Amazon S3 transition noncurrent object versions to
+	// the STANDARD_IA, ONEZONE_IA, or GLACIER storage class at a specific period
+	// in the object's lifetime.
 	NoncurrentVersionTransition *NoncurrentVersionTransition `type:"structure"`
 
 	// Prefix identifying one or more objects to which the rule applies.
@@ -19242,7 +20631,7 @@ func (s *Rule) SetTransition(v *Transition) *Rule {
 	return s
 }
 
-// Specifies the use of SSE-KMS to encrypt delievered Inventory reports.
+// Specifies the use of SSE-KMS to encrypt delivered Inventory reports.
 type SSEKMS struct {
 	_ struct{} `locationName:"SSE-KMS" type:"structure"`
 
@@ -19282,7 +20671,7 @@ func (s *SSEKMS) SetKeyId(v string) *SSEKMS {
 	return s
 }
 
-// Specifies the use of SSE-S3 to encrypt delievered Inventory reports.
+// Specifies the use of SSE-S3 to encrypt delivered Inventory reports.
 type SSES3 struct {
 	_ struct{} `locationName:"SSE-S3" type:"structure"`
 }
@@ -19295,6 +20684,439 @@ func (s SSES3) String() string {
 // GoString returns the string representation
 func (s SSES3) GoString() string {
 	return s.String()
+}
+
+// SelectObjectContentEventStream provides handling of EventStreams for
+// the SelectObjectContent API.
+//
+// Use this type to receive SelectObjectContentEventStream events. The events
+// can be read from the Events channel member.
+//
+// The events that can be received are:
+//
+//     * ContinuationEvent
+//     * EndEvent
+//     * ProgressEvent
+//     * RecordsEvent
+//     * StatsEvent
+type SelectObjectContentEventStream struct {
+	// Reader is the EventStream reader for the SelectObjectContentEventStream
+	// events. This value is automatically set by the SDK when the API call is made
+	// Use this member when unit testing your code with the SDK to mock out the
+	// EventStream Reader.
+	//
+	// Must not be nil.
+	Reader SelectObjectContentEventStreamReader
+
+	// StreamCloser is the io.Closer for the EventStream connection. For HTTP
+	// EventStream this is the response Body. The stream will be closed when
+	// the Close method of the EventStream is called.
+	StreamCloser io.Closer
+}
+
+// Close closes the EventStream. This will also cause the Events channel to be
+// closed. You can use the closing of the Events channel to terminate your
+// application's read from the API's EventStream.
+//
+// Will close the underlying EventStream reader. For EventStream over HTTP
+// connection this will also close the HTTP connection.
+//
+// Close must be called when done using the EventStream API. Not calling Close
+// may result in resource leaks.
+func (es *SelectObjectContentEventStream) Close() (err error) {
+	es.Reader.Close()
+	return es.Err()
+}
+
+// Err returns any error that occurred while reading EventStream Events from
+// the service API's response. Returns nil if there were no errors.
+func (es *SelectObjectContentEventStream) Err() error {
+	if err := es.Reader.Err(); err != nil {
+		return err
+	}
+	es.StreamCloser.Close()
+
+	return nil
+}
+
+// Events returns a channel to read EventStream Events from the
+// SelectObjectContent API.
+//
+// These events are:
+//
+//     * ContinuationEvent
+//     * EndEvent
+//     * ProgressEvent
+//     * RecordsEvent
+//     * StatsEvent
+func (es *SelectObjectContentEventStream) Events() <-chan SelectObjectContentEventStreamEvent {
+	return es.Reader.Events()
+}
+
+// SelectObjectContentEventStreamEvent groups together all EventStream
+// events read from the SelectObjectContent API.
+//
+// These events are:
+//
+//     * ContinuationEvent
+//     * EndEvent
+//     * ProgressEvent
+//     * RecordsEvent
+//     * StatsEvent
+type SelectObjectContentEventStreamEvent interface {
+	eventSelectObjectContentEventStream()
+}
+
+// SelectObjectContentEventStreamReader provides the interface for reading EventStream
+// Events from the SelectObjectContent API. The
+// default implementation for this interface will be SelectObjectContentEventStream.
+//
+// The reader's Close method must allow multiple concurrent calls.
+//
+// These events are:
+//
+//     * ContinuationEvent
+//     * EndEvent
+//     * ProgressEvent
+//     * RecordsEvent
+//     * StatsEvent
+type SelectObjectContentEventStreamReader interface {
+	// Returns a channel of events as they are read from the event stream.
+	Events() <-chan SelectObjectContentEventStreamEvent
+
+	// Close will close the underlying event stream reader. For event stream over
+	// HTTP this will also close the HTTP connection.
+	Close() error
+
+	// Returns any error that has occured while reading from the event stream.
+	Err() error
+}
+
+type readSelectObjectContentEventStream struct {
+	eventReader *eventstreamapi.EventReader
+	stream      chan SelectObjectContentEventStreamEvent
+	errVal      atomic.Value
+
+	done      chan struct{}
+	closeOnce sync.Once
+}
+
+func newReadSelectObjectContentEventStream(
+	reader io.ReadCloser,
+	unmarshalers request.HandlerList,
+	logger aws.Logger,
+	logLevel aws.LogLevelType,
+) *readSelectObjectContentEventStream {
+	r := &readSelectObjectContentEventStream{
+		stream: make(chan SelectObjectContentEventStreamEvent),
+		done:   make(chan struct{}),
+	}
+
+	r.eventReader = eventstreamapi.NewEventReader(
+		reader,
+		protocol.HandlerPayloadUnmarshal{
+			Unmarshalers: unmarshalers,
+		},
+		r.unmarshalerForEventType,
+	)
+	r.eventReader.UseLogger(logger, logLevel)
+
+	return r
+}
+
+// Close will close the underlying event stream reader. For EventStream over
+// HTTP this will also close the HTTP connection.
+func (r *readSelectObjectContentEventStream) Close() error {
+	r.closeOnce.Do(r.safeClose)
+
+	return r.Err()
+}
+
+func (r *readSelectObjectContentEventStream) safeClose() {
+	close(r.done)
+	err := r.eventReader.Close()
+	if err != nil {
+		r.errVal.Store(err)
+	}
+}
+
+func (r *readSelectObjectContentEventStream) Err() error {
+	if v := r.errVal.Load(); v != nil {
+		return v.(error)
+	}
+
+	return nil
+}
+
+func (r *readSelectObjectContentEventStream) Events() <-chan SelectObjectContentEventStreamEvent {
+	return r.stream
+}
+
+func (r *readSelectObjectContentEventStream) readEventStream() {
+	defer close(r.stream)
+
+	for {
+		event, err := r.eventReader.ReadEvent()
+		if err != nil {
+			if err == io.EOF {
+				return
+			}
+			select {
+			case <-r.done:
+				// If closed already ignore the error
+				return
+			default:
+			}
+			r.errVal.Store(err)
+			return
+		}
+
+		select {
+		case r.stream <- event.(SelectObjectContentEventStreamEvent):
+		case <-r.done:
+			return
+		}
+	}
+}
+
+func (r *readSelectObjectContentEventStream) unmarshalerForEventType(
+	eventType string,
+) (eventstreamapi.Unmarshaler, error) {
+	switch eventType {
+	case "Cont":
+		return &ContinuationEvent{}, nil
+
+	case "End":
+		return &EndEvent{}, nil
+
+	case "Progress":
+		return &ProgressEvent{}, nil
+
+	case "Records":
+		return &RecordsEvent{}, nil
+
+	case "Stats":
+		return &StatsEvent{}, nil
+	default:
+		return nil, awserr.New(
+			request.ErrCodeSerialization,
+			fmt.Sprintf("unknown event type name, %s, for SelectObjectContentEventStream", eventType),
+			nil,
+		)
+	}
+}
+
+// Request to filter the contents of an Amazon S3 object based on a simple Structured
+// Query Language (SQL) statement. In the request, along with the SQL expression,
+// you must specify a data serialization format (JSON or CSV) of the object.
+// Amazon S3 uses this to parse object data into records. It returns only records
+// that match the specified SQL expression. You must also specify the data serialization
+// format for the response. For more information, see S3Select API Documentation
+// (http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectSELECTContent.html).
+type SelectObjectContentInput struct {
+	_ struct{} `locationName:"SelectObjectContentRequest" type:"structure" xmlURI:"http://s3.amazonaws.com/doc/2006-03-01/"`
+
+	// The S3 bucket.
+	//
+	// Bucket is a required field
+	Bucket *string `location:"uri" locationName:"Bucket" type:"string" required:"true"`
+
+	// The expression that is used to query the object.
+	//
+	// Expression is a required field
+	Expression *string `type:"string" required:"true"`
+
+	// The type of the provided expression (for example., SQL).
+	//
+	// ExpressionType is a required field
+	ExpressionType *string `type:"string" required:"true" enum:"ExpressionType"`
+
+	// Describes the format of the data in the object that is being queried.
+	//
+	// InputSerialization is a required field
+	InputSerialization *InputSerialization `type:"structure" required:"true"`
+
+	// The object key.
+	//
+	// Key is a required field
+	Key *string `location:"uri" locationName:"Key" min:"1" type:"string" required:"true"`
+
+	// Describes the format of the data that you want Amazon S3 to return in response.
+	//
+	// OutputSerialization is a required field
+	OutputSerialization *OutputSerialization `type:"structure" required:"true"`
+
+	// Specifies if periodic request progress information should be enabled.
+	RequestProgress *RequestProgress `type:"structure"`
+
+	// The SSE Algorithm used to encrypt the object. For more information, see
+	// Server-Side Encryption (Using Customer-Provided Encryption Keys (http://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html).
+	SSECustomerAlgorithm *string `location:"header" locationName:"x-amz-server-side-encryption-customer-algorithm" type:"string"`
+
+	// The SSE Customer Key. For more information, see  Server-Side Encryption (Using
+	// Customer-Provided Encryption Keys (http://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html).
+	SSECustomerKey *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key" type:"string"`
+
+	// The SSE Customer Key MD5. For more information, see  Server-Side Encryption
+	// (Using Customer-Provided Encryption Keys (http://docs.aws.amazon.com/AmazonS3/latest/dev/ServerSideEncryptionCustomerKeys.html).
+	SSECustomerKeyMD5 *string `location:"header" locationName:"x-amz-server-side-encryption-customer-key-MD5" type:"string"`
+}
+
+// String returns the string representation
+func (s SelectObjectContentInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SelectObjectContentInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *SelectObjectContentInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "SelectObjectContentInput"}
+	if s.Bucket == nil {
+		invalidParams.Add(request.NewErrParamRequired("Bucket"))
+	}
+	if s.Expression == nil {
+		invalidParams.Add(request.NewErrParamRequired("Expression"))
+	}
+	if s.ExpressionType == nil {
+		invalidParams.Add(request.NewErrParamRequired("ExpressionType"))
+	}
+	if s.InputSerialization == nil {
+		invalidParams.Add(request.NewErrParamRequired("InputSerialization"))
+	}
+	if s.Key == nil {
+		invalidParams.Add(request.NewErrParamRequired("Key"))
+	}
+	if s.Key != nil && len(*s.Key) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("Key", 1))
+	}
+	if s.OutputSerialization == nil {
+		invalidParams.Add(request.NewErrParamRequired("OutputSerialization"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetBucket sets the Bucket field's value.
+func (s *SelectObjectContentInput) SetBucket(v string) *SelectObjectContentInput {
+	s.Bucket = &v
+	return s
+}
+
+func (s *SelectObjectContentInput) getBucket() (v string) {
+	if s.Bucket == nil {
+		return v
+	}
+	return *s.Bucket
+}
+
+// SetExpression sets the Expression field's value.
+func (s *SelectObjectContentInput) SetExpression(v string) *SelectObjectContentInput {
+	s.Expression = &v
+	return s
+}
+
+// SetExpressionType sets the ExpressionType field's value.
+func (s *SelectObjectContentInput) SetExpressionType(v string) *SelectObjectContentInput {
+	s.ExpressionType = &v
+	return s
+}
+
+// SetInputSerialization sets the InputSerialization field's value.
+func (s *SelectObjectContentInput) SetInputSerialization(v *InputSerialization) *SelectObjectContentInput {
+	s.InputSerialization = v
+	return s
+}
+
+// SetKey sets the Key field's value.
+func (s *SelectObjectContentInput) SetKey(v string) *SelectObjectContentInput {
+	s.Key = &v
+	return s
+}
+
+// SetOutputSerialization sets the OutputSerialization field's value.
+func (s *SelectObjectContentInput) SetOutputSerialization(v *OutputSerialization) *SelectObjectContentInput {
+	s.OutputSerialization = v
+	return s
+}
+
+// SetRequestProgress sets the RequestProgress field's value.
+func (s *SelectObjectContentInput) SetRequestProgress(v *RequestProgress) *SelectObjectContentInput {
+	s.RequestProgress = v
+	return s
+}
+
+// SetSSECustomerAlgorithm sets the SSECustomerAlgorithm field's value.
+func (s *SelectObjectContentInput) SetSSECustomerAlgorithm(v string) *SelectObjectContentInput {
+	s.SSECustomerAlgorithm = &v
+	return s
+}
+
+// SetSSECustomerKey sets the SSECustomerKey field's value.
+func (s *SelectObjectContentInput) SetSSECustomerKey(v string) *SelectObjectContentInput {
+	s.SSECustomerKey = &v
+	return s
+}
+
+func (s *SelectObjectContentInput) getSSECustomerKey() (v string) {
+	if s.SSECustomerKey == nil {
+		return v
+	}
+	return *s.SSECustomerKey
+}
+
+// SetSSECustomerKeyMD5 sets the SSECustomerKeyMD5 field's value.
+func (s *SelectObjectContentInput) SetSSECustomerKeyMD5(v string) *SelectObjectContentInput {
+	s.SSECustomerKeyMD5 = &v
+	return s
+}
+
+type SelectObjectContentOutput struct {
+	_ struct{} `type:"structure" payload:"Payload"`
+
+	// Use EventStream to use the API's stream.
+	EventStream *SelectObjectContentEventStream `type:"structure"`
+}
+
+// String returns the string representation
+func (s SelectObjectContentOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SelectObjectContentOutput) GoString() string {
+	return s.String()
+}
+
+// SetEventStream sets the EventStream field's value.
+func (s *SelectObjectContentOutput) SetEventStream(v *SelectObjectContentEventStream) *SelectObjectContentOutput {
+	s.EventStream = v
+	return s
+}
+
+func (s *SelectObjectContentOutput) runEventStreamLoop(r *request.Request) {
+	if r.Error != nil {
+		return
+	}
+	reader := newReadSelectObjectContentEventStream(
+		r.HTTPResponse.Body,
+		r.Handlers.UnmarshalStream,
+		r.Config.Logger,
+		r.Config.LogLevel.Value(),
+	)
+	go reader.readEventStream()
+
+	eventStream := &SelectObjectContentEventStream{
+		StreamCloser: r.HTTPResponse.Body,
+		Reader:       reader,
+	}
+	s.EventStream = eventStream
 }
 
 // Describes the parameters for Select job types.
@@ -19522,11 +21344,13 @@ func (s *ServerSideEncryptionRule) SetApplyServerSideEncryptionByDefault(v *Serv
 	return s
 }
 
-// Container for filters that define which source objects should be replicated.
+// A container for filters that define which source objects should be replicated.
 type SourceSelectionCriteria struct {
 	_ struct{} `type:"structure"`
 
-	// Container for filter information of selection of KMS Encrypted S3 objects.
+	// A container for filter information for the selection of S3 objects encrypted
+	// with AWS KMS. If you include SourceSelectionCriteria in the replication configuration,
+	// this element is required.
 	SseKmsEncryptedObjects *SseKmsEncryptedObjects `type:"structure"`
 }
 
@@ -19561,12 +21385,13 @@ func (s *SourceSelectionCriteria) SetSseKmsEncryptedObjects(v *SseKmsEncryptedOb
 	return s
 }
 
-// Container for filter information of selection of KMS Encrypted S3 objects.
+// A container for filter information for the selection of S3 objects encrypted
+// with AWS KMS.
 type SseKmsEncryptedObjects struct {
 	_ struct{} `type:"structure"`
 
-	// The replication for KMS encrypted S3 objects is disabled if status is not
-	// Enabled.
+	// If the status is not Enabled, replication for S3 objects encrypted with AWS
+	// KMS is disabled.
 	//
 	// Status is a required field
 	Status *string `type:"string" required:"true" enum:"SseKmsEncryptedObjectsStatus"`
@@ -19599,6 +21424,87 @@ func (s *SseKmsEncryptedObjects) Validate() error {
 func (s *SseKmsEncryptedObjects) SetStatus(v string) *SseKmsEncryptedObjects {
 	s.Status = &v
 	return s
+}
+
+type Stats struct {
+	_ struct{} `type:"structure"`
+
+	// The total number of uncompressed object bytes processed.
+	BytesProcessed *int64 `type:"long"`
+
+	// The total number of bytes of records payload data returned.
+	BytesReturned *int64 `type:"long"`
+
+	// The total number of object bytes scanned.
+	BytesScanned *int64 `type:"long"`
+}
+
+// String returns the string representation
+func (s Stats) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s Stats) GoString() string {
+	return s.String()
+}
+
+// SetBytesProcessed sets the BytesProcessed field's value.
+func (s *Stats) SetBytesProcessed(v int64) *Stats {
+	s.BytesProcessed = &v
+	return s
+}
+
+// SetBytesReturned sets the BytesReturned field's value.
+func (s *Stats) SetBytesReturned(v int64) *Stats {
+	s.BytesReturned = &v
+	return s
+}
+
+// SetBytesScanned sets the BytesScanned field's value.
+func (s *Stats) SetBytesScanned(v int64) *Stats {
+	s.BytesScanned = &v
+	return s
+}
+
+type StatsEvent struct {
+	_ struct{} `locationName:"StatsEvent" type:"structure" payload:"Details"`
+
+	// The Stats event details.
+	Details *Stats `locationName:"Details" type:"structure"`
+}
+
+// String returns the string representation
+func (s StatsEvent) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s StatsEvent) GoString() string {
+	return s.String()
+}
+
+// SetDetails sets the Details field's value.
+func (s *StatsEvent) SetDetails(v *Stats) *StatsEvent {
+	s.Details = v
+	return s
+}
+
+// The StatsEvent is and event in the SelectObjectContentEventStream group of events.
+func (s *StatsEvent) eventSelectObjectContentEventStream() {}
+
+// UnmarshalEvent unmarshals the EventStream Message into the StatsEvent value.
+// This method is only used internally within the SDK's EventStream handling.
+func (s *StatsEvent) UnmarshalEvent(
+	payloadUnmarshaler protocol.PayloadUnmarshaler,
+	msg eventstream.Message,
+) error {
+	if err := payloadUnmarshaler.UnmarshalPayload(
+		bytes.NewReader(msg.Payload), s,
+	); err != nil {
+		return err
+	}
+	return nil
 }
 
 type StorageClassAnalysis struct {
@@ -19844,24 +21750,26 @@ func (s *TargetGrant) SetPermission(v string) *TargetGrant {
 	return s
 }
 
-// Container for specifying the configuration when you want Amazon S3 to publish
-// events to an Amazon Simple Notification Service (Amazon SNS) topic.
+// A container for specifying the configuration for publication of messages
+// to an Amazon Simple Notification Service (Amazon SNS) topic.when Amazon S3
+// detects specified events.
 type TopicConfiguration struct {
 	_ struct{} `type:"structure"`
 
 	// Events is a required field
 	Events []*string `locationName:"Event" type:"list" flattened:"true" required:"true"`
 
-	// Container for object key name filtering rules. For information about key
-	// name filtering, go to Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+	// A container for object key name filtering rules. For information about key
+	// name filtering, see Configuring Event Notifications (http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html)
+	// in the Amazon Simple Storage Service Developer Guide.
 	Filter *NotificationConfigurationFilter `type:"structure"`
 
-	// Optional unique identifier for configurations in a notification configuration.
+	// An optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
 	Id *string `type:"string"`
 
-	// Amazon SNS topic ARN to which Amazon S3 will publish a message when it detects
-	// events of specified type.
+	// The Amazon Resource Name (ARN) of the Amazon SNS topic to which Amazon S3
+	// will publish a message when it detects events of the specified type.
 	//
 	// TopicArn is a required field
 	TopicArn *string `locationName:"Topic" type:"string" required:"true"`
@@ -19921,11 +21829,13 @@ type TopicConfigurationDeprecated struct {
 	_ struct{} `type:"structure"`
 
 	// Bucket event for which to send notifications.
+	//
+	// Deprecated: Event has been deprecated
 	Event *string `deprecated:"true" type:"string" enum:"Event"`
 
 	Events []*string `locationName:"Event" type:"list" flattened:"true"`
 
-	// Optional unique identifier for configurations in a notification configuration.
+	// An optional unique identifier for configurations in a notification configuration.
 	// If you don't provide one, Amazon S3 will assign an ID.
 	Id *string `type:"string"`
 
@@ -20027,14 +21937,14 @@ type UploadPartCopyInput struct {
 	CopySourceIfMatch *string `location:"header" locationName:"x-amz-copy-source-if-match" type:"string"`
 
 	// Copies the object if it has been modified since the specified time.
-	CopySourceIfModifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-modified-since" type:"timestamp" timestampFormat:"rfc822"`
+	CopySourceIfModifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-modified-since" type:"timestamp"`
 
 	// Copies the object if its entity tag (ETag) is different than the specified
 	// ETag.
 	CopySourceIfNoneMatch *string `location:"header" locationName:"x-amz-copy-source-if-none-match" type:"string"`
 
 	// Copies the object if it hasn't been modified since the specified time.
-	CopySourceIfUnmodifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-unmodified-since" type:"timestamp" timestampFormat:"rfc822"`
+	CopySourceIfUnmodifiedSince *time.Time `location:"header" locationName:"x-amz-copy-source-if-unmodified-since" type:"timestamp"`
 
 	// The range of bytes to copy from the source object. The range value must use
 	// the form bytes=first-last, where the first and last are the zero-based byte
@@ -20781,6 +22691,25 @@ const (
 	BucketVersioningStatusSuspended = "Suspended"
 )
 
+const (
+	// CompressionTypeNone is a CompressionType enum value
+	CompressionTypeNone = "NONE"
+
+	// CompressionTypeGzip is a CompressionType enum value
+	CompressionTypeGzip = "GZIP"
+
+	// CompressionTypeBzip2 is a CompressionType enum value
+	CompressionTypeBzip2 = "BZIP2"
+)
+
+const (
+	// DeleteMarkerReplicationStatusEnabled is a DeleteMarkerReplicationStatus enum value
+	DeleteMarkerReplicationStatusEnabled = "Enabled"
+
+	// DeleteMarkerReplicationStatusDisabled is a DeleteMarkerReplicationStatus enum value
+	DeleteMarkerReplicationStatusDisabled = "Disabled"
+)
+
 // Requests Amazon S3 to encode the object keys in the response and specifies
 // the encoding method to use. An object key may contain any Unicode character;
 // however, XML 1.0 parser cannot parse some characters, such as characters
@@ -20792,7 +22721,7 @@ const (
 	EncodingTypeUrl = "url"
 )
 
-// Bucket event for which to send notifications.
+// The bucket event for which to send notifications.
 const (
 	// EventS3ReducedRedundancyLostObject is a Event enum value
 	EventS3ReducedRedundancyLostObject = "s3:ReducedRedundancyLostObject"
@@ -20902,6 +22831,14 @@ const (
 )
 
 const (
+	// JSONTypeDocument is a JSONType enum value
+	JSONTypeDocument = "DOCUMENT"
+
+	// JSONTypeLines is a JSONType enum value
+	JSONTypeLines = "LINES"
+)
+
+const (
 	// MFADeleteEnabled is a MFADelete enum value
 	MFADeleteEnabled = "Enabled"
 
@@ -20957,6 +22894,12 @@ const (
 
 	// ObjectStorageClassGlacier is a ObjectStorageClass enum value
 	ObjectStorageClassGlacier = "GLACIER"
+
+	// ObjectStorageClassStandardIa is a ObjectStorageClass enum value
+	ObjectStorageClassStandardIa = "STANDARD_IA"
+
+	// ObjectStorageClassOnezoneIa is a ObjectStorageClass enum value
+	ObjectStorageClassOnezoneIa = "ONEZONE_IA"
 )
 
 const (
@@ -21078,6 +23021,9 @@ const (
 
 	// StorageClassStandardIa is a StorageClass enum value
 	StorageClassStandardIa = "STANDARD_IA"
+
+	// StorageClassOnezoneIa is a StorageClass enum value
+	StorageClassOnezoneIa = "ONEZONE_IA"
 )
 
 const (
@@ -21110,6 +23056,9 @@ const (
 
 	// TransitionStorageClassStandardIa is a TransitionStorageClass enum value
 	TransitionStorageClassStandardIa = "STANDARD_IA"
+
+	// TransitionStorageClassOnezoneIa is a TransitionStorageClass enum value
+	TransitionStorageClassOnezoneIa = "ONEZONE_IA"
 )
 
 const (

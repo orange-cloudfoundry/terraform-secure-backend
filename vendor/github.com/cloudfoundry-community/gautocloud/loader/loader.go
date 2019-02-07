@@ -4,18 +4,23 @@
 package loader
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/cloudfoundry-community/gautocloud/cloudenv"
 	"github.com/cloudfoundry-community/gautocloud/connectors"
 	"github.com/cloudfoundry-community/gautocloud/decoder"
 	"github.com/cloudfoundry-community/gautocloud/interceptor"
-	"github.com/cloudfoundry-community/gautocloud/loader/loghook"
 	log "github.com/sirupsen/logrus"
+	"os"
 	"reflect"
 )
 
+const (
+	LOG_MESSAGE_PREFIX = "gautocloud"
+	DEBUG_MODE_ENV_VAR = "GAUTOCLOUD_DEBUG"
+)
+
 type Loader interface {
+	Reload()
 	ReloadConnectors()
 	RegisterConnector(connector connectors.Connector)
 	Inject(service interface{}) error
@@ -29,7 +34,6 @@ type Loader interface {
 	CurrentCloudEnv() cloudenv.CloudEnv
 	GetAppInfo() cloudenv.AppInfo
 	IsInACloudEnv() bool
-	ShowPreviousLog()
 }
 
 type GautocloudLoader struct {
@@ -37,7 +41,6 @@ type GautocloudLoader struct {
 	connectors map[string]connectors.Connector
 	store      map[string][]StoredService
 	logger     *log.Logger
-	gHook      *loghook.GautocloudHook
 }
 type StoredService struct {
 	Data        interface{}
@@ -46,12 +49,11 @@ type StoredService struct {
 	Interceptor interceptor.Intercepter
 }
 
-func newLoader(cloudEnvs []cloudenv.CloudEnv, gHook *loghook.GautocloudHook, logger *log.Logger) Loader {
+func newLoader(cloudEnvs []cloudenv.CloudEnv, logger *log.Logger) Loader {
 	loader := &GautocloudLoader{
 		cloudEnvs:  cloudEnvs,
 		connectors: make(map[string]connectors.Connector),
 		store:      make(map[string][]StoredService),
-		gHook:      gHook,
 		logger:     logger,
 	}
 	loader.LoadCloudEnvs()
@@ -60,21 +62,10 @@ func newLoader(cloudEnvs []cloudenv.CloudEnv, gHook *loghook.GautocloudHook, log
 
 // Create a new loader with cloud environment given
 func NewLoader(cloudEnvs []cloudenv.CloudEnv) Loader {
-	return newLoader(cloudEnvs, nil, log.StandardLogger())
-}
-
-// Create a new loader with cloud environment given and it adds a logger and a gautcloud logrus hook to be able to retrieve
-// previous log.
-func NewFacadeLoader(cloudEnvs []cloudenv.CloudEnv) Loader {
-	buf := new(bytes.Buffer)
-	gHook := loghook.NewGautocloudHook(buf)
-
-	logger := log.New()
-	logger.SetLevel(log.DebugLevel)
-	logger.Out = buf
-	logger.AddHook(gHook)
-
-	return newLoader(cloudEnvs, gHook, logger)
+	if os.Getenv(DEBUG_MODE_ENV_VAR) != "" {
+		log.SetLevel(log.DebugLevel)
+	}
+	return newLoader(cloudEnvs, log.StandardLogger())
 }
 
 // Return all cloud environments loaded
@@ -93,7 +84,7 @@ func (l *GautocloudLoader) Store() map[string][]StoredService {
 }
 
 func logMessage(message string) string {
-	return loghook.LOG_MESSAGE_PREFIX + ": " + message
+	return LOG_MESSAGE_PREFIX + ": " + message
 }
 
 // Register a connector in the loader
@@ -109,7 +100,7 @@ func (l *GautocloudLoader) RegisterConnector(connector connectors.Connector) {
 	storedServices := l.load(connector)
 	err := l.checkInCloudEnv()
 	if err != nil {
-		entry.Infof(logMessage("Skipping loading connector: %s"), err.Error())
+		entry.Debugf(logMessage("Skipping loading connector: %s"), err.Error())
 		return
 	}
 	if len(storedServices) == 0 {
@@ -123,6 +114,13 @@ func (l *GautocloudLoader) RegisterConnector(connector connectors.Connector) {
 func (l GautocloudLoader) Connectors() map[string]connectors.Connector {
 	return l.connectors
 }
+
+// Reload environment and connectors
+func (l GautocloudLoader) Reload() {
+	l.LoadCloudEnvs()
+	l.ReloadConnectors()
+}
+
 func (l GautocloudLoader) LoadCloudEnvs() {
 	for _, cloudEnv := range l.cloudEnvs {
 		entry := l.logger.WithField("cloud_environment", cloudEnv.Name())
@@ -137,7 +135,7 @@ func (l GautocloudLoader) LoadCloudEnvs() {
 				err.Error(),
 			)
 		}
-		entry.Info(logMessage("Environment detected and loaded."))
+		entry.Debug(logMessage("Environment detected and loaded."))
 	}
 }
 
@@ -312,7 +310,7 @@ func (l GautocloudLoader) getData(store StoredService, current interface{}) (int
 	entry := l.logger.WithField("connector_id", store.ConnectorId).
 		WithField("type", store.ReflectType.String())
 
-	entry.Info(logMessage("Data intercepting by interceptor given by connector..."))
+	entry.Debug(logMessage("Data intercepting by interceptor given by connector..."))
 	finalData, err := store.Interceptor.Intercept(current, store.Data)
 	if err != nil {
 		NewErrGiveService(
@@ -429,7 +427,7 @@ func (l *GautocloudLoader) load(connector connectors.Connector) []StoredService 
 			ConnectorId: connector.Id(),
 		})
 	}
-	entry.Infof(logMessage("Connector load %d service(s)."), len(storedServices))
+	entry.Debugf(logMessage("Connector load %d service(s)."), len(storedServices))
 	return storedServices
 }
 func (l GautocloudLoader) addService(services []cloudenv.Service, toAdd ...cloudenv.Service) []cloudenv.Service {
@@ -440,16 +438,6 @@ func (l GautocloudLoader) addService(services []cloudenv.Service, toAdd ...cloud
 		services = append(services, service)
 	}
 	return services
-}
-
-// Show previous logs entries created at initialization.
-// Prefer set a GAUTOCLOUD_DEBUG env var to true (or `json` to see logs as json) to see debug message at load too
-// In some situation, this can be useful.
-func (l GautocloudLoader) ShowPreviousLog() {
-	if l.gHook == nil {
-		return
-	}
-	l.gHook.ShowPreviousLog()
 }
 
 func (l GautocloudLoader) serviceAlreadyExists(services []cloudenv.Service, toFind cloudenv.Service) bool {
