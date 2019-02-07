@@ -1,8 +1,8 @@
-# Terraform-secure-backend [![Build Status](https:#travis-ci.org/orange-cloudfoundry/terraform-secure-backend.svg?branch=master)](https:#travis-ci.org/orange-cloudfoundry/terraform-secure-backend)
+# Terraform-secure-backend [![Build Status](https://travis-ci.org/orange-cloudfoundry/terraform-secure-backend.svg?branch=master)](https://travis-ci.org/orange-cloudfoundry/terraform-secure-backend)
 
-An [http backend](https:#www.terraform.io/docs/backends/types/http.html) which stores and retrieves tfstates files in a secure and encrypted way through [credhub](https:#github.com/cloudfoundry-incubator/credhub).
+An [http backend](https://www.terraform.io/docs/backends/types/http.html) which stores and retrieves tfstates files in a secure and encrypted way through [credhub](https://github.com/cloudfoundry-incubator/credhub).
 
-This backend supports [state locking](https:#www.terraform.io/docs/state/locking.html).
+This backend supports [state locking](https://www.terraform.io/docs/state/locking.html).
 
 ## Installation
 
@@ -15,18 +15,18 @@ You can install this via the command-line with either `curl` or `wget`.
 #### via curl
 
 ```bash
-$ sh -c "$(curl -fsSL https:#raw.github.com/orange-cloudfoundry/terraform-secure-backend/master/bin/install.sh)"
+$ sh -c "$(curl -fsSL https://raw.github.com/orange-cloudfoundry/terraform-secure-backend/master/bin/install.sh)"
 ```
 
 #### via wget
 
 ```bash
-$ sh -c "$(wget https:#raw.github.com/orange-cloudfoundry/terraform-secure-backend/master/bin/install.sh -O -)"
+$ sh -c "$(wget https://raw.github.com/orange-cloudfoundry/terraform-secure-backend/master/bin/install.sh -O -)"
 ```
 
 ### On windows
 
-You can install it by downloading the `.exe` corresponding to your cpu from releases page: https:#github.com/orange-cloudfoundry/terraform-secure-backend/releases .
+You can install it by downloading the `.exe` corresponding to your cpu from releases page: https://github.com/orange-cloudfoundry/terraform-secure-backend/releases .
 Alternatively, if you have a terminal interpreting shell you can also use command line script above, it will download file in your current working dir.
 
 ## Commands
@@ -54,7 +54,7 @@ GLOBAL OPTIONS:
 
 There is two different ways to run the server:
 1. [In local](#in-local)
-2. [In a cloud](#in-a-cloud) through [gautocloud](https:#github.com/cloudfoundry-community/gautocloud) (Run with ease this server on: Kubernetes, CloudFoundry or Heroku)
+2. [In a cloud](#in-a-cloud) through [gautocloud](https://github.com/cloudfoundry-community/gautocloud) (Run with ease this server on: Kubernetes, CloudFoundry or Heroku)
 
 ### In local
 
@@ -122,9 +122,9 @@ Add in your `.tf` file a new http backend (**Note**: `<deployment name>` is what
 ```hcl
 terraform {
   backend "http" {
-    address = "https:#path.to.my.secure.backend.com/states/<deployment name>"
-    lock_address = "https:#path.to.my.secure.backend.com/states/<deployment name>"
-    unlock_address = "https:#path.to.my.secure.backend.com/states/<deployment name>"
+    address = "https://path.to.my.secure.backend.com/states/<deployment name>"
+    lock_address = "https://path.to.my.secure.backend.com/states/<deployment name>"
+    unlock_address = "https://path.to.my.secure.backend.com/states/<deployment name>"
     username = "user"
     password = "password"
   }
@@ -133,6 +133,6 @@ terraform {
 
 ## Api
 
-The Api implements the terraform [http backend API](https:#www.terraform.io/docs/backends/types/http.html) on each `https:#path.to.my.secure.backend.com/states/<deployment name>`.
+The Api implements the terraform [http backend API](https://www.terraform.io/docs/backends/types/http.html) on each `https://path.to.my.secure.backend.com/states/<deployment name>`.
 
-You can list all tfstates stored by calling: `https:#path.to.my.secure.backend.com/states`
+You can list all tfstates stored by calling: `https://path.to.my.secure.backend.com/states`
