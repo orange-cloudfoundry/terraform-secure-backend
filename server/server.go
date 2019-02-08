@@ -124,7 +124,7 @@ func (s *Server) Load() error {
 	if s.config.Name == "" {
 		return fmt.Errorf("You must define a name to your backend to not conflict with other backend in credhub.")
 	}
-	s.config.CredhubCaCert, err = s.getTlsFilePath(s.config.CredhubCaCert)
+	s.config.CredhubCaCert, err = s.getTlsPem(s.config.CredhubCaCert)
 	if err != nil {
 		return err
 	}
@@ -213,6 +213,18 @@ func (s Server) Run() error {
 	return http.ListenAndServe(servAddr, finalHandler)
 }
 
+func (s Server) getTlsPem(tlsConf string) (string, error) {
+	if tlsConf == "" {
+		return "", nil
+	}
+	_, err := os.Stat(tlsConf)
+	if err != nil {
+		return tlsConf, nil
+	}
+	b, err := ioutil.ReadFile(tlsConf)
+	return string(b), err
+}
+
 func (s Server) getTlsFilePath(tlsConf string) (string, error) {
 	if tlsConf == "" {
 		return "", nil
@@ -220,9 +232,6 @@ func (s Server) getTlsFilePath(tlsConf string) (string, error) {
 	_, err := os.Stat(tlsConf)
 	if err == nil {
 		return tlsConf, nil
-	}
-	if !os.IsNotExist(err) {
-		return "", err
 	}
 	f, err := ioutil.TempFile("", "terraform-secure-backend")
 	if err != nil {
