@@ -165,6 +165,7 @@ func (s *Server) loadHandler() error {
 		rtr.Use(cefMiddleware.Middleware)
 	}
 	apiRtr := rtr.PathPrefix("/states").Subrouter()
+	apiRtr.HandleFunc("/{name}", controller.Store).Methods("POST")
 	apiRtr.HandleFunc("/{name}", controller.Retrieve).Methods("GET")
 	apiRtr.HandleFunc("/{name}", controller.Delete).Methods("DELETE")
 	apiRtr.HandleFunc("/{name}", controller.Lock).Methods("LOCK")
