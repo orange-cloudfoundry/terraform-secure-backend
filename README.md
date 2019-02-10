@@ -83,6 +83,7 @@ credhub_ca_cert: ~ # You can set the credhub ca_cert here if it's a self signed 
 skip_ssl_validation: false # set to true to skip ssl validation when connecting to your credhub (prefer use credhub_ca_cert for security reasons)
 cef: false # set to true to enable security event in common event format 
 cef-file: ~ # set a path to a file to store security event in common event format to a file
+auth-url: ~ # specifies the authentication server for the OAuth strategy. If auth-url provided, the auth-url will be fetched from credhub server /info.
 dry-run: false # set to true to not sent to credhub state file
 ```
 

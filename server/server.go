@@ -50,6 +50,7 @@ type ServerConfig struct {
 	ShowError          bool     `json:"show_error" yaml:"show_error"`
 	CEF                bool     `json:"cef" yaml:"cef"`
 	CEFFile            string   `json:"cef-file" yaml:"cef-file"`
+	AuthUrl            string   `json:"auth-url" yaml:"auth-url"`
 	DryRun             bool     `json:"dry-run" yaml:"dry-run"`
 }
 
@@ -270,6 +271,10 @@ func (s Server) CreateCredhubCli() (CredhubClient, error) {
 	if s.config.SkipSslValidation {
 		options = append(options, credhub.SkipTLSValidation(true))
 	}
+	if s.config.AuthUrl != "" {
+		credhub.AuthURL(s.config.AuthUrl)
+	}
+
 	caCert := s.config.CredhubCaCert
 	if caCert != "" {
 		options = append(options, credhub.CaCerts(caCert))
