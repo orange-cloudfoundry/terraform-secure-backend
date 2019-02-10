@@ -4,6 +4,10 @@ An [http backend](https://www.terraform.io/docs/backends/types/http.html) which 
 
 This backend supports [state locking](https://www.terraform.io/docs/state/locking.html).
 
+## Boshrelease
+
+You can deploy this backend with a the boshrelease associated: https://github.com/orange-cloudfoundry/terraform-secure-backend-release/
+
 ## Installation
 
 Installer will place the latest release binary in your current working directory.
