@@ -19,13 +19,13 @@ function build {
   fi
 
   cd ${CWD}
-  echo "building gobis-server (${os} ${arch})..."
+  echo "building ${BINARYNAME} (${os} ${arch})..."
   GOARCH=${arch} GOOS=${os} go build -ldflags="-s -w -X main.Version=${version}" -o $OUTDIR/${BINARYNAME}_${os}_${arch}${ext} || {
     echo >&2 "error: while building ${BINARYNAME} (${os} ${arch})"
     return 1
   }
 
-  echo "zipping gobis-server (${os} ${arch})..."
+  echo "zipping ${BINARYNAME} (${os} ${arch})..."
   cd $OUTDIR
   zip "${BINARYNAME}_${os}_${arch}.zip" "${BINARYNAME}_${os}_${arch}${ext}" || {
     echo >&2 "error: cannot zip file ${BINARYNAME}_${os}_${arch}${ext}"
