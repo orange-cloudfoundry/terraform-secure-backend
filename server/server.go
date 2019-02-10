@@ -272,7 +272,7 @@ func (s Server) CreateCredhubCli() (CredhubClient, error) {
 		options = append(options, credhub.SkipTLSValidation(true))
 	}
 	if s.config.AuthUrl != "" {
-		credhub.AuthURL(s.config.AuthUrl)
+		options = append(options, credhub.AuthURL(s.config.AuthUrl))
 	}
 
 	caCert := s.config.CredhubCaCert
