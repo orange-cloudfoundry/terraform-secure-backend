@@ -2,6 +2,8 @@
 
 An [http backend](https://www.terraform.io/docs/backends/types/http.html) which stores and retrieves tfstates files in a secure and encrypted way through [credhub](https://github.com/cloudfoundry-incubator/credhub).
 
+When file is too large for database use in credhub, file will be split in part and gzipped to be sent to credhub and rebuild final file when retrieving from credhub. 
+
 This backend supports [state locking](https://www.terraform.io/docs/state/locking.html).
 
 ## Boshrelease
@@ -67,7 +69,8 @@ There is two different ways to run the server:
 ```yaml
 host: 0.0.0.0 # an be 127.0.0.1 too
 port: 8080 # port to listen
-name: terraform-secure # this name inside credhub to create an unique path for your tfstate
+chunk_size: ~ # Chunk size in number of bytes to split your tfstate inside credhub to leverage database limit (Default: 60000)
+base_path: /terraform-secure-backend/tfstate/pouet #  Create an unique path for your tfstate on credhub
 cert: ~ # Set a path or pem cert string certificate to run your senver in tls (ignored if lets_encrypt_domains is set)
 key: ~ # Set a path or pem key string certificate to run your senver in tls (ignored if lets_encrypt_domains is set)
 log_level: ~ # Verbosity, can be info, debug, warning, error

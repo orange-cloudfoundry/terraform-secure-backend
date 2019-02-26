@@ -1,8 +1,6 @@
 package server_test
 
 import (
-	. "github.com/orange-cloudfoundry/terraform-secure-backend/server"
-
 	"bytes"
 	"code.cloudfoundry.org/credhub-cli/credhub/credentials"
 	"code.cloudfoundry.org/credhub-cli/credhub/credentials/values"
@@ -11,7 +9,9 @@ import (
 	"github.com/hashicorp/terraform/state"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/orange-cloudfoundry/terraform-secure-backend/server/serverfakes"
+	. "github.com/orange-cloudfoundry/terraform-secure-backend/server"
+	"github.com/orange-cloudfoundry/terraform-secure-backend/server/credhub/credhubfakes"
+	"github.com/orange-cloudfoundry/terraform-secure-backend/server/storer"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
@@ -20,15 +20,17 @@ import (
 
 var _ = Describe("Api", func() {
 	log.SetOutput(ioutil.Discard)
-	var fakeClient *serverfakes.FakeCredhubClient
+	var fakeClient *credhubfakes.FakeCredhubClient
+	var cStorer *storer.Credhub
 	var apiController *ApiController
 	var lockStore *LockStore
 	var responseRecorder *httptest.ResponseRecorder
 	BeforeEach(func() {
 		responseRecorder = httptest.NewRecorder()
-		fakeClient = new(serverfakes.FakeCredhubClient)
+		fakeClient = new(credhubfakes.FakeCredhubClient)
+		cStorer = storer.NewCredhub(fakeClient)
 		lockStore = NewLockStore(fakeClient)
-		apiController = NewApiController("test", fakeClient, lockStore)
+		apiController = NewApiController("test", fakeClient, cStorer, lockStore)
 	})
 	Context("Store", func() {
 		It("should store data when giving state", func() {

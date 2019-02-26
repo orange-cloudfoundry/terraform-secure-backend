@@ -9,6 +9,8 @@ import (
 	"github.com/cloudfoundry-community/gautocloud/connectors/generic"
 	"github.com/goji/httpauth"
 	"github.com/gorilla/mux"
+	cclient "github.com/orange-cloudfoundry/terraform-secure-backend/server/credhub"
+	"github.com/orange-cloudfoundry/terraform-secure-backend/server/storer"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/acme/autocert"
 	"io"
@@ -20,8 +22,7 @@ import (
 )
 
 const (
-	CREDHUB_PREFIX = "/terraform-secure-backend/tfstate"
-	LOCK_SUFFIX    = "-lock"
+	LOCK_SUFFIX = "/lock"
 )
 
 func init() {
@@ -30,7 +31,8 @@ func init() {
 
 type ServerConfig struct {
 	Host               string   `json:"host" yaml:"host"`
-	Name               string   `json:"name" yaml:"name"`
+	BasePath           string   `json:"base_path" yaml:"base_path"`
+	ChunkSize          int64    `json:"chunk_size" yaml:"chunk_size"`
 	Port               int      `json:"port" yaml:"port"`
 	Cert               string   `json:"cert" yaml:"cert" cloud-default:"server.crt"`
 	Key                string   `json:"key" yaml:"key" cloud-default:"server.key"`
@@ -122,8 +124,11 @@ func (s *Server) Load() error {
 		}
 	}
 	var err error
-	if s.config.Name == "" {
-		return fmt.Errorf("You must define a name to your backend to not conflict with other backend in credhub.")
+	if s.config.BasePath == "" {
+		return fmt.Errorf("You must define a base_path to your backend to not conflict with other backend in credhub.")
+	}
+	if s.config.ChunkSize <= 0 {
+		s.config.ChunkSize = 60000
 	}
 	s.config.CredhubCaCert, err = s.getTlsPem(s.config.CredhubCaCert)
 	if err != nil {
@@ -151,8 +156,11 @@ func (s *Server) loadHandler() error {
 	if err != nil {
 		return err
 	}
-	store := NewLockStore(credhubClient)
-	controller := NewApiController(s.config.Name, credhubClient, store)
+	lockStore := NewLockStore(credhubClient)
+	store := storer.NewGzip(storer.NewB64(storer.NewCutter(
+		storer.NewCredhub(credhubClient), s.config.ChunkSize),
+	))
+	controller := NewApiController(s.config.BasePath, credhubClient, store, lockStore)
 	rtr := mux.NewRouter()
 	if s.config.CEF {
 		var cefW io.Writer = os.Stdout
@@ -244,9 +252,9 @@ func (s Server) getTlsFilePath(tlsConf string) (string, error) {
 	return f.Name(), nil
 }
 
-func (s Server) CreateCredhubCli() (CredhubClient, error) {
+func (s Server) CreateCredhubCli() (cclient.CredhubClient, error) {
 	if s.config.DryRun {
-		return &NullCredhubClient{}, nil
+		return &cclient.NullCredhubClient{}, nil
 	}
 	apiEndpoint := strings.TrimPrefix(s.config.CredhubServer, "http://")
 	if !strings.HasPrefix(apiEndpoint, "https://") {
@@ -274,7 +282,6 @@ func (s Server) CreateCredhubCli() (CredhubClient, error) {
 	if s.config.AuthUrl != "" {
 		options = append(options, credhub.AuthURL(s.config.AuthUrl))
 	}
-
 	caCert := s.config.CredhubCaCert
 	if caCert != "" {
 		options = append(options, credhub.CaCerts(caCert))

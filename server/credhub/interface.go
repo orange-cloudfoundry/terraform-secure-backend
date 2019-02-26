@@ -1,8 +1,9 @@
-package server
+package credhub
 
 import (
 	"code.cloudfoundry.org/credhub-cli/credhub/credentials"
 	"code.cloudfoundry.org/credhub-cli/credhub/credentials/values"
+	"github.com/sirupsen/logrus"
 )
 
 type CredhubClient interface {
@@ -26,6 +27,7 @@ func (NullCredhubClient) Delete(name string) error {
 }
 
 func (NullCredhubClient) SetJSON(name string, value values.JSON) (credentials.JSON, error) {
+	logrus.WithField("path", name).WithField("type", "set-json").Info(value)
 	return credentials.JSON{}, nil
 }
 
@@ -34,6 +36,7 @@ func (NullCredhubClient) FindByPath(path string) (credentials.FindResults, error
 }
 
 func (NullCredhubClient) SetValue(name string, value values.Value) (credentials.Value, error) {
+	logrus.WithField("path", name).WithField("type", "set-value").Info(value)
 	return credentials.Value{}, nil
 }
 

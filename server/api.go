@@ -1,25 +1,28 @@
 package server
 
 import (
-	"code.cloudfoundry.org/credhub-cli/credhub/credentials/values"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/terraform/state"
+	"github.com/orange-cloudfoundry/terraform-secure-backend/server/credhub"
+	"github.com/orange-cloudfoundry/terraform-secure-backend/server/storer"
 	"github.com/sirupsen/logrus"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
 )
 
 type ApiController struct {
-	name          string
-	credhubClient CredhubClient
+	basePath      string
+	storer        storer.Storer
 	store         *LockStore
+	credhubClient credhub.CredhubClient
 }
 
-func NewApiController(name string, credhubClient CredhubClient, store *LockStore) *ApiController {
-	return &ApiController{name, credhubClient, store}
+func NewApiController(basePath string, credhubClient credhub.CredhubClient, storer storer.Storer, store *LockStore) *ApiController {
+	return &ApiController{basePath, storer, store, credhubClient}
 }
 
 type CredModel struct {
@@ -34,18 +37,7 @@ func (c ApiController) Store(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 	entry := logrus.WithField("action", "store").WithField("name", c.RequestName(req))
 	entry.Debug("Storing tfstate")
-	var dataJson map[string]interface{}
-	b, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		entry.Error(err)
-		panic(err)
-	}
-	err = json.Unmarshal(b, &dataJson)
-	if err != nil {
-		entry.Error(err)
-		panic(err)
-	}
-	_, err = c.credhubClient.SetJSON(c.CredhubName(req), values.JSON(dataJson))
+	err := c.storer.Store(c.CredhubName(req), req.Body)
 	if err != nil {
 		entry.Error(err)
 		panic(err)
@@ -56,7 +48,7 @@ func (c ApiController) Retrieve(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 	entry := logrus.WithField("action", "retrieve").WithField("name", c.RequestName(req))
 	entry.Debug("Retrieving tfstate")
-	cred, err := c.credhubClient.GetLatestJSON(c.CredhubName(req))
+	r, err := c.storer.Retrieve(c.CredhubName(req))
 	if err != nil && strings.Contains(err.Error(), "does not exist") {
 		w.WriteHeader(http.StatusNoContent)
 		return
@@ -65,22 +57,22 @@ func (c ApiController) Retrieve(w http.ResponseWriter, req *http.Request) {
 		entry.Error(err)
 		panic(err)
 	}
+	defer r.Close()
 	w.Header().Set("Content-Type", "application/json")
-	b, _ := json.Marshal(cred.Value)
-	w.Write(b)
+	io.Copy(w, r)
 }
 
 func (c ApiController) Delete(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
-	name := c.CredhubName(req)
+	path := c.CredhubName(req)
 	entry := logrus.WithField("action", "delete").WithField("name", c.RequestName(req))
 	entry.Debug("Deleting tfstate")
-	err := c.credhubClient.Delete(name)
+	err := c.storer.Delete(path)
 	if err != nil {
 		entry.Error(err)
 		panic(err)
 	}
-	err = c.store.DeleteLock(name)
+	err = c.store.DeleteLock(path)
 	if err != nil {
 		entry.Error(err)
 		panic(err)
@@ -119,12 +111,8 @@ func (c ApiController) Lock(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (c ApiController) Path() string {
-	return fmt.Sprintf("%s/%s", CREDHUB_PREFIX, c.name)
-}
-
 func (c ApiController) CredhubName(req *http.Request) string {
-	return fmt.Sprintf("%s/%s", c.Path(), c.RequestName(req))
+	return fmt.Sprintf("%s/%s", c.basePath, c.RequestName(req))
 }
 
 func (c ApiController) RequestName(req *http.Request) string {
@@ -165,7 +153,7 @@ func (c ApiController) UnLock(w http.ResponseWriter, req *http.Request) {
 
 func (c ApiController) List(w http.ResponseWriter, req *http.Request) {
 	entry := logrus.WithField("action", "list")
-	result, err := c.credhubClient.FindByPath(c.Path())
+	result, err := c.credhubClient.FindByPath(c.basePath)
 	if err != nil {
 		entry.Error(err)
 		panic(err)
